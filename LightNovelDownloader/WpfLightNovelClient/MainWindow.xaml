@@ -59,7 +59,7 @@
                     <Style.Resources>
                         <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
                             <VisualBrush.Visual>
-                                <Label Content="Paste the link to any other lightnovel publishing wordpress site here!" Foreground="LightGray" />
+                                <Label Content="Paste the link to the Table of Content of any other lightnovel here!" Foreground="LightGray" />
                             </VisualBrush.Visual>
                         </VisualBrush>
                     </Style.Resources>

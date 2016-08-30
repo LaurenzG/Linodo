@@ -234,6 +234,7 @@ namespace WpfLightNovelClient
             List<string> content = new List<string>();
             try
             {
+                //Add the css style-sheet inline
                 content.AddRange(System.IO.File.ReadAllLines(Environment.CurrentDirectory + "\\styles"));
             }
             catch (System.IO.IOException)
@@ -252,94 +253,7 @@ namespace WpfLightNovelClient
                 foreach (ChapterDto item in chapters)
                 {
                     lastChapter = item;
-                    string s = "";
-                    var root = switchSite(item.ChapterUrl);
-                    //Wuxiaworld
-                    if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
-                    {
-                        var p = root.Descendants()
-                            .Where(n => n.GetAttributeValue("itemprop", "") == "articleBody")
-                            .Single();
-                        //Remove the next Chapter & previous Chapter Links
-                        var a = p.Descendants()
-                            .Where(n => n.Name == "a" && (n.InnerText.ToLower().Contains("next") || n.InnerText.ToLower().Contains("previous")))
-                            .ToList();
-                        for (int k = 0; k < a.Count(); k++)
-                        {
-                            a[k].Remove();
-                        }
-                        s = p.InnerHtml;
-                    }
-                    //GravityTales & TranslationNations
-                    else
-                    {
-                        HtmlNode p;
-                        try
-                        {
-                            p = root.Descendants()
-                            .Where(n => n.GetAttributeValue("class", "").Contains("entry-content"))
-                            .First();
-                        }
-                        catch (Exception)
-                        {
-                            try
-                            {
-                                p = root.Descendants()
-                                .Where(n => n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
-                                .First();
-                            }
-                            catch (Exception)
-                            {
-                                p = new HtmlDocument().DocumentNode;
-                            }
-                            
-                        }
-                        if (item.ChapterUrl.ToLower().Contains("gravitytales") || item.ChapterUrl.ToLower().Contains("translationnations"))
-                        { 
-                            while (p.LastChild.Name != "p")
-                            {
-                                p.RemoveChild(p.LastChild);
-                            }
-                        }
-                        else
-                        {
-                            try
-                            {
-                                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
-                            }
-                            catch { }
-                        }
-                        if(p.FirstChild!=null)
-                        {
-                            p.RemoveChild(p.FirstChild);
-                        }
-                        
-                        //Add title
-                        try
-                        {
-                            p.InnerHtml = root.Descendants().Where(n => n.GetAttributeValue("class", "") == "entry-title").First().OuterHtml
-                                + p.InnerHtml;
-                        }
-                        catch { }
-                        //if (item.ChapterUrl.ToLower().Contains("translationnations"))
-                        //    p.InnerHtml = p.PreviousSibling.PreviousSibling.OuterHtml + p.InnerHtml;
-                        //else
-                        //{
-                            try
-                            {
-                                p.RemoveChild(p.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("sharedaddy")).First());
-                            }
-                            catch (Exception) { }
-                        //}
-                        if (p.LastChild != null)
-                        {
-                            p.RemoveChild(p.LastChild);
-                            s = p.InnerHtml;
-                        }
-                    }
-                    s = encodeString(s);
-                    
-                    content.Add(s);
+                    content.Add(addSite(item));
                     i++;
                     (sender as BackgroundWorker).ReportProgress(i*100/chapters.Count);
                 }
@@ -348,26 +262,101 @@ namespace WpfLightNovelClient
             {
                 MessageBox.Show("Some chapters might not be displayed properly");
             }
+            //Get the default/saved path for the file to be saved at
             string path = (Properties.Settings.Default["Path"].Equals("")) 
                 ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
                 : (string)Properties.Settings.Default["Path"];
 
+            //Get the book, to name the site accordingly
             BookDto book = (BookDto)arguments[1];
             
             if (chapters.Count > 1)
-                path = path + "\\" + book.Name + " Chapters " + firstChapter.ChapterId + "-" + lastChapter.ChapterId + ".html";
+                path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId + ".html";
             else
-                path = path + "\\" + book.Name + " Chapter " + firstChapter.ChapterId + ".html";
+                path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId + ".html";
             System.IO.File.WriteAllLines(path, content);
             txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
                     new object[] { path });
+        }
 
+        private string addSite(ChapterDto item)
+        {
+            string s = "";
+            var root = switchSite(item.ChapterUrl);
+            HtmlNode p;
+            //Tries to find the main part of the chapter
+            try
+            {
+                p = root.Descendants()
+                .Where(n => n.GetAttributeValue("class", "").Contains("entry-content"))
+                .First();
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    p = root.Descendants()
+                    .Where(n => n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
+                    .First();
+                }
+                catch (Exception)
+                {
+                    p = new HtmlDocument().DocumentNode;
+                }
+            }
+            //Remove comments
+            try
+            {
+                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
+            }
+            catch { }
+            //Remove links to other chapters including the ToC
+            try
+            {
+                var a = p.Descendants()
+                .Where(n => n.Name == "a" &&
+                    (n.InnerText.ToLower().Contains("next") || n.InnerText.ToLower().Contains("previous") ||
+                    n.InnerText.ToLower().Contains("table of content") || n.InnerText.ToLower().Contains("index")))
+                .ToList();
+                for (int k = 0; k < a.Count(); k++)
+                {
+                    a[k].Remove();
+                }
+            }
+            catch { }
+            //Add title
+            try
+            {
+                p.InnerHtml = root.Descendants().Where(n => n.GetAttributeValue("class", "") == "entry-title").First().OuterHtml
+                    + p.InnerHtml;
+            }
+            catch { }
+            //Remove Share-part of the site
+            try
+            {
+                while (true)
+                {
+                    p.RemoveChild(p.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("sharedaddy")).First());
+                }
+            }
+            catch { }
+            //Remove ads on WuxiaWorld
+            if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
+            {
+                p.LastChild.Remove();
+                p.LastChild.Remove();
+            }
+            //Adds the Html to the list if the content is not empty
+            if (p.LastChild != null)
+            {
+                s = p.InnerHtml;
+            }
+
+            return encodeString(s);
         }
 
         private string encodeString(string s)
         {
-            //In some cases the text is already encoded, which results in display-errors
-            s = HttpUtility.HtmlDecode(s);
             //Changes the special characters that are used in the html so that they don't get encoded
             s = s.Replace(">", "*Bly*at*");
             s = s.Replace("<", "*Bl*yat*");
@@ -375,9 +364,13 @@ namespace WpfLightNovelClient
             s = s.Replace("=", "*B*lyat*");
             s = s.Replace("\"", "*B*lya*t");
             s = s.Replace("'", "*B*ly*at");
-            //s = HttpUtility.HtmlEncode(s);
+
+            //In some cases the text is already encoded, which results in display-errors
+            s = HttpUtility.HtmlDecode(s);
+
             //The AntiXSSLibrary encodes even chinese chars and other unorthodox characters
             s = Microsoft.Security.Application.Encoder.HtmlEncode(s, true);
+
             //Change the html tags and co back to their original form
             s = s.Replace("*Bly*at*", ">");
             s = s.Replace("*Bl*yat*", "<");
@@ -406,6 +399,7 @@ namespace WpfLightNovelClient
         {
             bool success=false;
             var root = new HtmlDocument().DocumentNode;
+            //Remove bad links to get to the latest one that is working
             while (!success)
             {
                 try
@@ -423,7 +417,6 @@ namespace WpfLightNovelClient
             {
                 next = nextChapter(root);
                 root = changeSite(root);
-                
             }
             catch (Exception)
             {
@@ -436,6 +429,7 @@ namespace WpfLightNovelClient
             
             bool stop = false;
             
+            //Continues to read the next chapter links and adds those chapters to the chapter list
             while (!stop)
             {
                 try
@@ -464,7 +458,6 @@ namespace WpfLightNovelClient
         {
             var p = nextChapter(root);
             return switchSite(p.GetAttributeValue("href", ""));
-            //return webget.Load(p.GetAttributeValue("href", "")).DocumentNode;
         }
         private HtmlNode nextChapter(HtmlNode root)
         {
@@ -520,9 +513,19 @@ namespace WpfLightNovelClient
 
         private void CustomSiteBtn_Click(object sender, RoutedEventArgs e)
         {
-            HtmlNode root = switchSite(findBook.Text);
+            HtmlNode root;
+            try
+            {
+                root = switchSite(findBook.Text);
+            }
+            catch (WebException exc)
+            {
+                txtNotificator.Text = exc.Message;
+                return;
+            }
+            //Unselect the current book to prevent issues later on when naming a file
             bookList.SelectedItem = null;
-            
+
             List<ChapterDto> chapters = new List<ChapterDto>();
             try
             {
@@ -530,6 +533,7 @@ namespace WpfLightNovelClient
             }
             catch { }
             List<HtmlNode> p = new List<HtmlNode>();
+            //Get all the links that could be chapters
             try
             {
                 p = root.Descendants()
@@ -537,12 +541,11 @@ namespace WpfLightNovelClient
                             || n.GetAttributeValue("class", "") == "main")
                      .First()
                     .Descendants()
-                    .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains(">"))
+                    .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
                     .ToList();
             }
-            catch (Exception)
-            {
-            }
+            catch {}
+            //Add all the potential chapters to the chapterlist
             for (int i = 0; i < p.Count(); i++)
             {
                 if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "")
