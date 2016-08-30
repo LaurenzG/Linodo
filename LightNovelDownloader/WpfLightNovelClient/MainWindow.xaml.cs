@@ -107,10 +107,17 @@ namespace WpfLightNovelClient
                 url = "http://" + url;
             }
             var page = new HtmlDocument();
-            page.LoadHtml(new WebClient
+            try
             {
-                Encoding = Encoding.UTF8
-            }.DownloadString(url));
+                page.LoadHtml(new WebClient
+                {
+                    Encoding = Encoding.UTF8
+                }.DownloadString(url));
+            }
+            catch (Exception e)
+            {
+                txtNotificator.Text = e.Message;
+            }
             return page.DocumentNode;
         }
 
@@ -544,18 +551,31 @@ namespace WpfLightNovelClient
                     .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
                     .ToList();
             }
-            catch {}
+            catch {
+                txtNotificator.Text = "No chapters found";
+            }
+            List<string> urlList = new List<string>();
             //Add all the potential chapters to the chapterlist
             for (int i = 0; i < p.Count(); i++)
             {
+                
                 if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "")
                 {
-                    chapters.Add(new ChapterDto
+                    if (!urlList.Contains(p.ElementAt(i).GetAttributeValue("href", "")))
                     {
-                        ChapterId = i + 1,
-                        ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
-                        DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
-                    });
+                        urlList.Add(p.ElementAt(i).GetAttributeValue("href", ""));
+                        chapters.Add(new ChapterDto
+                        {
+                            ChapterId = i + 1,
+                            ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
+                            DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
+                        });
+                    }
+                    else
+                    {
+                        p.RemoveAt(i);
+                        i--;
+                    }
                 }
                 else
                 {

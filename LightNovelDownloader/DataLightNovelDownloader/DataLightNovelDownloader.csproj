@@ -49,11 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EFRepository.cs" />
-    <Compile Include="EF\IRepository.cs" />
     <Compile Include="Entities.cs" />
-    <Compile Include="LightNovelContext.cs" />
-    <Compile Include="LightNovelManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

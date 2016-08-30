@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WpfLightNovelClient"
         xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors" x:Class="WpfLightNovelClient.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="700" Width="1000"
+        Title="LightNovelDownloader" Height="700" Width="1000"
         Loaded="Window_Loaded">
     <Grid>
         <Grid.RowDefinitions>
