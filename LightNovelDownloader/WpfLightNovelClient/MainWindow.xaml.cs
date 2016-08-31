@@ -210,6 +210,7 @@ namespace WpfLightNovelClient
         {
             List<ChapterDto> selectedChapters = chapterList.SelectedItems.OfType<ChapterDto>().ToList();
             BookDto selectedBook = (BookDto)bookList.SelectedItem;
+            
             if (selectedBook == null) selectedBook = new BookDto { IndexUrl = findBook.Text, Name = "Custom" };
             if (selectedChapters.Count > 0)
             {
@@ -297,18 +298,32 @@ namespace WpfLightNovelClient
                 p = root.Descendants()
                 .Where(n => n.GetAttributeValue("class", "").Contains("entry-content"))
                 .First();
+                if (p.InnerText.Count() < 100)
+                {
+                    throw new Exception();
+                }
             }
             catch (Exception)
             {
                 try
                 {
                     p = root.Descendants()
-                    .Where(n => n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
+                    .Where(n => (n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
+                     && !n.GetAttributeValue("class", "").Contains("header"))
                     .First();
                 }
                 catch (Exception)
                 {
-                    p = new HtmlDocument().DocumentNode;
+                    try
+                    {
+                        p = root.Descendants()
+                        .Where(n => n.GetAttributeValue("class", "").Contains("post_body"))
+                        .First();
+                    }
+                    catch (Exception)
+                    {
+                        p = new HtmlDocument().DocumentNode;
+                    }
                 }
             }
             //Remove comments
@@ -546,13 +561,26 @@ namespace WpfLightNovelClient
                 p = root.Descendants()
                     .Where(n => n.GetAttributeValue("role", "") == "main"|| n.GetAttributeValue("id", "") == "main"
                             || n.GetAttributeValue("class", "") == "main")
-                     .First()
+                    .First()
                     .Descendants()
                     .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
                     .ToList();
             }
             catch {
-                txtNotificator.Text = "No chapters found";
+                try
+                {
+                    p = root.Descendants()
+                    .Where(n => n.GetAttributeValue("class", "") == "chapters")
+                    .First()
+                    .Descendants()
+                    .Where(n => n.Name.Equals("a"))
+                    .ToList();
+                }
+                catch (Exception)
+                {
+                    txtNotificator.Text = "No chapters found";
+                }
+                
             }
             List<string> urlList = new List<string>();
             //Add all the potential chapters to the chapterlist
