@@ -422,7 +422,7 @@ namespace WpfLightNovelClient
             bool success=false;
             var root = new HtmlDocument().DocumentNode;
             //Remove bad links to get to the latest one that is working
-            while (!success)
+            while (!success && chapters.Count>0)
             {
                 try
                 {
@@ -555,6 +555,10 @@ namespace WpfLightNovelClient
             }
             catch { }
             List<HtmlNode> p = new List<HtmlNode>();
+            List<string> classTextEntries = new List<string>();
+            classTextEntries.Add("collapseomatic_content");
+            classTextEntries.Add("chapters");
+            classTextEntries.Add("page");
             //Get all the links that could be chapters
             try
             {
@@ -567,20 +571,26 @@ namespace WpfLightNovelClient
                     .ToList();
             }
             catch {
-                try
+                bool found = false;
+                foreach (var textEntry in classTextEntries)
                 {
-                    p = root.Descendants()
-                    .Where(n => n.GetAttributeValue("class", "") == "chapters")
-                    .First()
-                    .Descendants()
-                    .Where(n => n.Name.Equals("a"))
-                    .ToList();
+                    try
+                    {
+                        p = root.Descendants()
+                           .Where(n => n.GetAttributeValue("class", "").Contains(textEntry))
+                           .First()
+                           .Descendants()
+                           .Where(n => n.Name.Equals("a"))
+                           .ToList();
+                        if (p.Count > 0)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    catch { }
                 }
-                catch (Exception)
-                {
-                    txtNotificator.Text = "No chapters found";
-                }
-                
+                if(!found) txtNotificator.Text = "No chapters found";
             }
             List<string> urlList = new List<string>();
             //Add all the potential chapters to the chapterlist
