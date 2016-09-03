@@ -456,22 +456,30 @@ namespace WpfLightNovelClient
             {
                 try
                 {
-                    chapters.Add(new ChapterDto
+                    if (chapters.Last().ChapterUrl != next.GetAttributeValue("href", ""))
                     {
-                        ChapterUrl = next.GetAttributeValue("href",""),
-                        ChapterId = chapters.Count-1,
-                        DisplayName = root.Descendants().Where(n => n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")).First().InnerText
-                    });
-                    next = nextChapter(root);
+                        chapters.Add(new ChapterDto
+                        {
+                            ChapterUrl = next.GetAttributeValue("href", ""),
+                            ChapterId = chapters.Count - 1,
+                            DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")).First().InnerText)
+                        });
+                        next = nextChapter(root);
+                    }
+                    else throw new HttpException();
                     root = changeSite(root);
-
                 }
                 catch (InvalidOperationException)
                 {
                     stop = true;
                     chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-                    new object[] { chapters });
-                    
+                    new object[] { chapters });   
+                }
+                catch (HttpException)
+                {
+                    stop = true;
+                    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
+                                        new object[] { chapters });
                 }
             }
         }
@@ -559,6 +567,7 @@ namespace WpfLightNovelClient
             classTextEntries.Add("collapseomatic_content");
             classTextEntries.Add("chapters");
             classTextEntries.Add("page");
+            
             //Get all the links that could be chapters
             try
             {
