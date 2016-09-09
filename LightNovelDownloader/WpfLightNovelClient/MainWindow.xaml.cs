@@ -365,8 +365,7 @@ namespace WpfLightNovelClient
             //Remove ads on WuxiaWorld
             if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
             {
-                p.LastChild.Remove();
-                p.LastChild.Remove();
+                p.Descendants().Where(n => n.GetAttributeValue("class", "") == "code-block code-block-4 ai-viewport-3").First().RemoveAll();
             }
             //Adds the Html to the list if the content is not empty
             if (p.LastChild != null)
