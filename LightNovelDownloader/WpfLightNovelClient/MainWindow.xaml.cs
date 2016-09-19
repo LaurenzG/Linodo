@@ -245,10 +245,11 @@ namespace WpfLightNovelClient
         private void downloadChapter(object sender, DoWorkEventArgs e)
         {
             List<string> content = new List<string>();
+            List<string> css = new List<string>();
             try
             {
                 //Add the css style-sheet inline
-                content.AddRange(System.IO.File.ReadAllLines(Environment.CurrentDirectory + "\\styles"));
+                css.AddRange(System.IO.File.ReadAllLines(Environment.CurrentDirectory + "\\styles"));
             }
             catch (System.IO.IOException)
             {
@@ -297,7 +298,10 @@ namespace WpfLightNovelClient
                 EpubOnFly epub = new EpubOnFly();
                 epub.Metadata.Creator = "Tangrooner";
                 epub.Metadata.Title = book.Name;
-                epub.AddContent("filename.html", string.Join("", content));
+                for (int i = 0; i < content.Count; i++)
+                {
+                    epub.AddContent(book.Name+"-"+ firstChapter.ChapterId+i + ".html", string.Join("", css) + content[i]);
+                }
                 epub.BuildToFile(path);
             }
             else
