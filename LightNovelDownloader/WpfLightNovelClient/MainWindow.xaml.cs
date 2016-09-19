@@ -1,6 +1,7 @@
 ﻿using DataLightNovelDownloader;
 using Dto;
 using HtmlAgilityPack;
+using SharpEpub;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -281,12 +282,32 @@ namespace WpfLightNovelClient
 
             //Get the book, to name the site accordingly
             BookDto book = (BookDto)arguments[1];
+            string ending = ((bool)Properties.Settings.Default["AsEpub"]
+                ? ".epub"
+                : ".html");
             
             if (chapters.Count > 1)
-                path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId + ".html";
+                path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId+ending;
             else
-                path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId + ".html";
-            System.IO.File.WriteAllLines(path, content);
+                path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId+ending ;
+
+
+            if ((bool)Properties.Settings.Default["AsEpub"])
+            {
+                EpubOnFly epub = new EpubOnFly();
+                epub.Metadata.Creator = "Tangrooner";
+                epub.Metadata.Title = book.Name;
+                epub.AddContent("filename.html", string.Join("", content));
+                epub.BuildToFile(path);
+            }
+            else
+            {
+                System.IO.File.WriteAllLines(path, content);
+            }
+
+
+
+
             txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
                     new object[] { path });
         }
@@ -655,7 +676,7 @@ namespace WpfLightNovelClient
                     currentChapterList.Add(c);
                     chapterList.Items.Refresh();
                 }
-                catch (Exception ehh)
+                catch (Exception)
                 {
                     c.ChapterId = 1;
                 }

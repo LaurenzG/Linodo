@@ -4,18 +4,20 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfLightNovelClient"
-        mc:Ignorable="d" Height="100" Width="300">
+        mc:Ignorable="d" Height="100" Width="700">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Button Name="FolderBtn" Grid.Row="1" Content="Change save location" Click="FolderBtn_Click"></Button>
-        <TextBlock Name="pathTxt" Grid.ColumnSpan="2" TextAlignment="Center"></TextBlock>
-        <Button Name="ReturnBtn" Grid.Row="1" Grid.Column="1" Content="Back" Background="LavenderBlush" Click="ReturnBtn_Click"></Button>
+        <TextBlock Name="pathTxt" Grid.ColumnSpan="3" TextAlignment="Center"></TextBlock>
+        <Button Name="SaveAsBtn" Grid.Row="1" Grid.Column="1" Background="LavenderBlush" Click="SaveAsBtn_Click"></Button>
+        <Button Name="ReturnBtn" Grid.Row="1" Grid.Column="2" Content="Back" Background="LavenderBlush" Click="ReturnBtn_Click"></Button>
     </Grid>
 </Window>

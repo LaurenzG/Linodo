@@ -191,6 +191,10 @@
       <Project>{41945ad3-8ff6-4275-96f1-40453ac363a1}</Project>
       <Name>Dto</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SharpEpub\SharpEpub.csproj">
+      <Project>{8f73f5e4-a96e-45cf-b552-1baa17085af3}</Project>
+      <Name>SharpEpub</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">

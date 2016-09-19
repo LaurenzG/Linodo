@@ -25,6 +25,9 @@ namespace WpfLightNovelClient
             pathTxt.Text = (Properties.Settings.Default["Path"].Equals(""))
                 ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
                 : (string)Properties.Settings.Default["Path"];
+            SaveAsBtn.Content = ((bool)Properties.Settings.Default["AsEpub"])
+                ? "Save as Epub"
+                : "Save as Html";
         }
 
         private void FolderBtn_Click(object sender, RoutedEventArgs e)
@@ -41,7 +44,24 @@ namespace WpfLightNovelClient
 
         private void ReturnBtn_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Properties.Settings.Default["AsEpub"] = SaveAsBtn.Content.Equals("Save as Epub") 
+                ? true
+                : false;
+            Properties.Settings.Default.Save();
+            Close();
+        }
+
+        private void SaveAsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            
+            if (((string)SaveAsBtn.Content).Contains("Epub"))
+            {
+                SaveAsBtn.Content = "Save as Html";
+            }
+            else
+            {
+                SaveAsBtn.Content = "Save as Epub";
+            }
         }
     }
 }

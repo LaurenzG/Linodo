@@ -34,5 +34,17 @@ namespace WpfLightNovelClient.Properties {
                 this["Path"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AsEpub {
+            get {
+                return ((bool)(this["AsEpub"]));
+            }
+            set {
+                this["AsEpub"] = value;
+            }
+        }
     }
 }
