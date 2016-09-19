@@ -1,0 +1,25 @@
+﻿<Window x:Class="WpfLightNovelClient.AddChapterDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfLightNovelClient"
+        mc:Ignorable="d"
+        Title="Add Chapter" Height="200" Width="500">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.5*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center">Insert Link</TextBlock>
+        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1">Insert Name</TextBlock>
+        <TextBox Name="linkTxtBox" Grid.Column="1"></TextBox>
+        <TextBox Name="nameTxtBox" Grid.Row="1" Grid.Column="1"></TextBox>
+        <Button Name="addChapterBtn" Grid.Row="2" Grid.ColumnSpan="2" Click="addChapterBtn_Click">Add Chapter</Button>
+    </Grid>
+</Window>

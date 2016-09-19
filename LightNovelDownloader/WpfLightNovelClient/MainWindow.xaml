@@ -50,7 +50,7 @@
                 <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
             </StatusBarItem>
             <StatusBarItem HorizontalContentAlignment="Stretch">
-                <ProgressBar Style="{x:Null}" x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
+                <ProgressBar x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
             </StatusBarItem>
         </StatusBar>
         <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Stretch">
@@ -80,7 +80,15 @@
         <Button Name="CustomSiteBtn" Grid.Column="3" Content="Go" Click="CustomSiteBtn_Click"></Button>
         <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click"/>
-        <Button x:Name="refreshChapterBtn" Grid.Column="2" Grid.Row="2" Content="Get latest Chapters" HorizontalAlignment="Stretch" Click="refreshChapterBtn_Click"/>
+        <Grid Grid.Column="2" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="refreshChapterBtn" Content="Latest Chapters" Click="refreshChapterBtn_Click"/>
+            <Button Grid.Column="1" x:Name="getCustomChapterBtn" Content="Add Chapter" Click="getCustomChapterBtn_Click"/>
+        </Grid>
+        
         <Button x:Name="settingsBtn" Grid.Column="3" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click"/>
 
     </Grid>

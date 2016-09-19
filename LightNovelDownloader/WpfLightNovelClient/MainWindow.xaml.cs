@@ -28,6 +28,7 @@ namespace WpfLightNovelClient
     public partial class MainWindow : Window
     {
         List<BookDto> listOfBooks = new List<BookDto>();
+        List<ChapterDto> currentChapterList = new List<ChapterDto>();
         public MainWindow()
         {
             InitializeComponent();
@@ -36,6 +37,7 @@ namespace WpfLightNovelClient
         {
             loadBooks();
             this.DataContext = listOfBooks;
+            chapterList.ItemsSource = currentChapterList;
         }
         private void loadBooks()
         {
@@ -166,8 +168,10 @@ namespace WpfLightNovelClient
                         DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
                     });
                 }
-
-                chapterList.ItemsSource = chapters;
+                currentChapterList.Clear();
+                currentChapterList.AddRange(chapters);
+                chapterList.Items.Refresh();
+                
             }
             catch (WebException w)
             {
@@ -501,7 +505,9 @@ namespace WpfLightNovelClient
         }
         private void UpdateItems(List<ChapterDto> c)
         {
-            chapterList.ItemsSource = c;
+            currentChapterList.Clear();
+            currentChapterList.AddRange(c);
+            chapterList.Items.Refresh();
             txtNotificator.Text = "";
         }
         private void UpdateProgress(string path)
@@ -629,7 +635,33 @@ namespace WpfLightNovelClient
                     i--;
                 }
             }
-            chapterList.ItemsSource = chapters;
+            UpdateItems(chapters);
+        }
+
+        private void getCustomChapterBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<ChapterDto> chapters = new List<ChapterDto>();
+            var w = new AddChapterDialog();
+            w.Owner = this;
+            w.ShowDialog();
+            ChapterDto c = w.Chapter;
+            if (w.Success)
+            {
+                try
+                {
+                    //c.ChapterId = ((List<ChapterDto>)chapterList.ItemsSource).Count + 1;
+                    c.ChapterId = 80;
+                    //chapters = ((List<ChapterDto>)chapterList.ItemsSource);
+                    currentChapterList.Add(c);
+                    chapterList.Items.Refresh();
+                }
+                catch (Exception ehh)
+                {
+                    c.ChapterId = 1;
+                }
+                //chapters.Add(c);
+            }
+            //UpdateItems(chapters);
         }
     }
 }
