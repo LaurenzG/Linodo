@@ -44,7 +44,7 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <ListBox Grid.Row="1" x:Name="bookList" ItemsSource="{Binding}"  DisplayMemberPath="Name" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="bookList_SelectionChanged"/>
+        <ListBox Grid.Row="1" x:Name="bookList" DisplayMemberPath="Name" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="bookList_SelectionChanged"/>
         <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" Background="White">
             <StatusBarItem>
                 <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
@@ -77,7 +77,38 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <Button Name="CustomSiteBtn" Grid.Column="3" Content="Go" Click="CustomSiteBtn_Click"></Button>
+        <Grid Grid.Column="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Go" Click="CustomSiteBtn_Click"></Button>
+            <TextBox Name="CustomBookTxt">
+                <TextBox.Style>
+                    <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                        <Style.Resources>
+                            <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                <VisualBrush.Visual>
+                                    <Label Content="Insert Name" Foreground="LightGray" />
+                                </VisualBrush.Visual>
+                            </VisualBrush>
+                        </Style.Resources>
+                        <Style.Triggers>
+                            <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
+                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                            </Trigger>
+                            <Trigger Property="Text" Value="{x:Null}">
+                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="Background" Value="White" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+        </Grid>
+        
         <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click"/>
         <Grid Grid.Column="2" Grid.Row="2">

@@ -4,6 +4,7 @@ using HtmlAgilityPack;
 using SharpEpub;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
@@ -29,18 +30,33 @@ namespace WpfLightNovelClient
     public partial class MainWindow : Window
     {
         List<BookDto> listOfBooks = new List<BookDto>();
+        List<BookDto> displayedBookList = new List<BookDto>();
         List<ChapterDto> currentChapterList = new List<ChapterDto>();
         public MainWindow()
         {
             InitializeComponent();
         }
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs eh)
         {
-            loadBooks();
-            this.DataContext = listOfBooks;
             chapterList.ItemsSource = currentChapterList;
+            bookList.ItemsSource = displayedBookList;
+            asyncLoadBooks();
         }
-        private void loadBooks()
+        private void asyncLoadBooks()
+        {
+            txtNotificator.Text = "Loading Books";
+            BackgroundWorker work = new BackgroundWorker();
+            work.DoWork += loadBooks;
+            work.RunWorkerAsync();
+            work.RunWorkerCompleted += Work_RunWorkerCompleted;
+        }
+        private void Work_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            bookList.Items.Refresh();
+            txtNotificator.Text = "";
+        }
+
+        private void loadBooks(object sender, DoWorkEventArgs eh)
         {
             var categoryList = new List<BookDto>();
             List<HtmlNode> p = new List<HtmlNode>();
@@ -49,6 +65,9 @@ namespace WpfLightNovelClient
             #region Fill p
             try
             {
+                var cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(5));
+
                 root = switchSite("http://www.wuxiaworld.com");
                 p.AddRange(getTranslations(root, "menu-item-12207"));
                 p.AddRange(getTranslations(root, "menu-item-2165"));
@@ -57,6 +76,14 @@ namespace WpfLightNovelClient
             {
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
+            }
+            catch (InvalidOperationException)
+            {
+                MessageBox.Show("WuxiaWorld failed to load!");
+            }
+            catch (TaskCanceledException)
+            {
+                MessageBox.Show("WuxiaWorld failed to load!");
             }
 
             try
@@ -68,6 +95,14 @@ namespace WpfLightNovelClient
             {
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
+            }
+            catch (InvalidOperationException)
+            {
+                MessageBox.Show("TranslationNations failed to load!");
+            }
+            catch (TaskCanceledException)
+            {
+                MessageBox.Show("TranslationNations failed to load!");
             }
 
             try
@@ -81,7 +116,16 @@ namespace WpfLightNovelClient
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
             }
+            catch(InvalidOperationException ioe)
+            {
+                MessageBox.Show("GravityTales failed to load!");
+            }
+            catch (TaskCanceledException)
+            {
+                MessageBox.Show("TranslationNations failed to load!");
+            }
             #endregion
+            displayedBookList.Clear();
             listOfBooks.Clear();
             for (int i = 0; i < p.Count(); i++)
             {
@@ -91,7 +135,8 @@ namespace WpfLightNovelClient
                     IndexUrl = p.ElementAt(i).GetAttributeValue("href", "")
                 });
             }
-            listOfBooks = listOfBooks.OrderBy(c => c.Name).ToList();
+            listOfBooks.Sort((x, y) => x.Name.CompareTo(y.Name));
+            displayedBookList.AddRange(listOfBooks);
         }
         private List<HtmlNode> getTranslations(HtmlNode root,string id)
         {
@@ -126,15 +171,24 @@ namespace WpfLightNovelClient
 
         private void bookList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            txtNotificator.Text = "";
-            if (((System.Windows.Controls.Primitives.Selector)sender).SelectedItem == null) return;
+            
+            BackgroundWorker work = new BackgroundWorker();
+            work.DoWork += loadChapters; ;
+            work.RunWorkerAsync(bookList.SelectedItem);
+        }
+
+        private void loadChapters(object sender, DoWorkEventArgs eh)
+        {
+            var selectedBook = (BookDto)eh.Argument;
+            
+            
+            if (selectedBook == null) return;
             Book book = new Book
             {
-                Name = ((BookDto)((System.Windows.Controls.Primitives.Selector)sender).SelectedItem).Name,
-                IndexUrl = ((BookDto)((System.Windows.Controls.Primitives.Selector)sender).SelectedItem).IndexUrl,
+                Name = selectedBook.Name,
+                IndexUrl = selectedBook.IndexUrl
             };
-            //var books = await client.GetAsync<BookDto>(((BookDto)((System.Windows.Controls.Primitives.Selector)sender).SelectedItem).Name);
-            //BookDto book = books.SingleOrDefault();
+
             var chapters = new List<ChapterDto>();
             try
             {
@@ -146,45 +200,120 @@ namespace WpfLightNovelClient
                     }
                     catch (Exception)
                     {
-                        txtNotificator.Text ="There was a minor error, the shown chapters might not be completely accurate.";
+
                     }
-                var p = root.Descendants()
-                    .Where(n => n.GetAttributeValue("id", "") == "primary" && n.Name == "div")
-                    .Single()
-                    .Descendants()
-                    .Where(n => n.Name.Equals("a") && 
-                        (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")))
-                    .ToList();
+                List<HtmlNode> p = new List<HtmlNode>();
+                List<string> classTextEntries = new List<string>();
+                classTextEntries.Add("collapseomatic_content");
+                classTextEntries.Add("chapters");
+                classTextEntries.Add("page");
+
+                try
+                {
+                    p = root.Descendants()
+                        .Where(n => n.GetAttributeValue("id", "") == "primary" && n.Name == "div")
+                        .Single()
+                        .Descendants()
+                        .Where(n => n.Name.Equals("a") &&
+                            (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")))
+                        .ToList();
+                }
+                catch
+                {
+                    try
+                    {
+                        root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
+                    }
+                    catch { }
+                    try
+                    {
+                        p = root.Descendants()
+                            .Where(n => n.GetAttributeValue("role", "") == "main" || n.GetAttributeValue("id", "") == "main"
+                                    || n.GetAttributeValue("class", "") == "main")
+                            .First()
+                            .Descendants()
+                            .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
+                            .ToList();
+                    }
+                    catch
+                    {
+                        bool found = false;
+                        foreach (var textEntry in classTextEntries)
+                        {
+                            try
+                            {
+                                p = root.Descendants()
+                                   .Where(n => n.GetAttributeValue("class", "").Contains(textEntry))
+                                   .First()
+                                   .Descendants()
+                                   .Where(n => n.Name.Equals("a"))
+                                   .ToList();
+                                if (p.Count > 0)
+                                {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            catch { }
+                        }
+                        if (!found) txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                    new object[] { "No chapters found" });
+                    }
+                }
                 //Undefeated God of War
                 if (p.Count < 4)
                 {
                     p = SearchIndex(root);
                 }
+
+                List<string> urlList = new List<string>();
                 for (int i = 0; i < p.Count(); i++)
                 {
-                    chapters.Add(new ChapterDto
+                    if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "")
                     {
-                        ChapterId = i + 1,
-                        ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
-                        DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
-                    });
+                        if (!urlList.Contains(p.ElementAt(i).GetAttributeValue("href", "")))
+                        {
+                            urlList.Add(p.ElementAt(i).GetAttributeValue("href", ""));
+                            chapters.Add(new ChapterDto
+                            {
+                                ChapterId = i + 1,
+                                ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
+                                DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
+                            });
+                        }
+                        else
+                        {
+                            p.RemoveAt(i);
+                            i--;
+                        }
+                    }
+                    else
+                    {
+                        p.RemoveAt(i);
+                        i--;
+                    }
                 }
                 currentChapterList.Clear();
                 currentChapterList.AddRange(chapters);
-                chapterList.Items.Refresh();
-                
+                //chapterList.Items.Refresh();
+                txtNotificator.Dispatcher.Invoke(new RefreshListCallback(RefreshList));
+
             }
             catch (WebException w)
             {
-                txtNotificator.Text = w.Message;
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                    new object[] { w.Message });
             }
-            
-            
-            //foreach (var item in chapters)
-            //{
-            //    await client.PostAsync(item);
-            //}
+        }
 
+        private void RefreshList()
+        {
+            chapterList.Items.Refresh();
+        }
+
+        private void UpdateTxtNotificator(string msg)
+        {
+            txtNotificator.Text = msg;
         }
 
         private List<HtmlNode> SearchIndex(HtmlNode root)
@@ -253,7 +382,8 @@ namespace WpfLightNovelClient
             }
             catch (System.IO.IOException)
             {
-                txtNotificator.Dispatcher.Invoke(new FailReadingStylesCallback(FailReadingStyles));
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                        new object[] { "The style template was not found!" });
             }
             
             var arguments = e.Argument as List<object>;
@@ -274,7 +404,8 @@ namespace WpfLightNovelClient
             }
             catch (InvalidCastException)
             {
-                MessageBox.Show("Some chapters might not be displayed properly");
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                        new object[] { "Some chapters might not be displayed properly" });
             }
             //Get the default/saved path for the file to be saved at
             string path = (Properties.Settings.Default["Path"].Equals("")) 
@@ -300,18 +431,16 @@ namespace WpfLightNovelClient
                 epub.Metadata.Title = book.Name;
                 for (int i = 0; i < content.Count; i++)
                 {
-                    epub.AddContent(book.Name+"-"+ firstChapter.ChapterId+i + ".html", string.Join("", css) + content[i]);
+                    epub.AddContent(book.Name+"-"+ (firstChapter.ChapterId+i) + ".html", string.Join("", css) + content[i]);
                 }
                 epub.BuildToFile(path);
             }
             else
             {
-                System.IO.File.WriteAllLines(path, content);
+                css.AddRange(content);
+                System.IO.File.WriteAllLines(path, css);
             }
-
-
-
-
+            
             txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
                     new object[] { path });
         }
@@ -401,7 +530,6 @@ namespace WpfLightNovelClient
             {
                 s = p.InnerHtml;
             }
-
             return encodeString(s);
         }
 
@@ -442,8 +570,8 @@ namespace WpfLightNovelClient
             }
         }
         private delegate void UpdateProgressBarCallback(string path);
-        private delegate void FailReadingStylesCallback();
-
+        private delegate void UpdateTxtNotificatorCallback(string msg);
+        private delegate void RefreshListCallback();
         private delegate void UpdateItemsCallback(List<ChapterDto> c);
         private void getLatestChapters(List<ChapterDto> chapters)
         {
@@ -523,11 +651,6 @@ namespace WpfLightNovelClient
                     .Where(n => n.Name == "a" && n.InnerText.ToLower().Contains("next"))
                     .First();
         }
-
-        private void FailReadingStyles()
-        {
-            txtNotificator.Text = "The style template was not found!";
-        }
         private void UpdateItems(List<ChapterDto> c)
         {
             currentChapterList.Clear();
@@ -540,10 +663,14 @@ namespace WpfLightNovelClient
             txtNotificator.Text = "File created successfully,click to open!";
             txtNotificator.Tag = path;
             txtNotificator.AddHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));
-            System.Timers.Timer timer = new System.Timers.Timer(5000) { Enabled = true };
+            System.Timers.Timer timer = new System.Timers.Timer(9000) { Enabled = true };
             timer.Elapsed += (sender, args) =>
             {
                 txtNotificator.RemoveHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));
+
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                        new object[] { "" });
+
                 timer.Dispose();
             };
             downloadProgress.Visibility = Visibility.Collapsed;
@@ -562,15 +689,13 @@ namespace WpfLightNovelClient
         }
         private void searchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            ICollectionView view = CollectionViewSource.GetDefaultView(listOfBooks);
-            view.Filter = CustomFilter;
-            bookList.ItemsSource = view;
+            displayedBookList.Clear();
+            foreach (var p in listOfBooks.Where(p => (p.Name.ToLower().Contains(searchBox.Text.ToLower()))))
+            {
+                displayedBookList.Add(p);
+            }
+            bookList.Items.Refresh();
         }
-        private bool CustomFilter(object item)
-        {
-            return ((BookDto)item).Name.ToLower().Contains(searchBox.Text.ToLower());
-        }
-
         private void CustomSiteBtn_Click(object sender, RoutedEventArgs e)
         {
             HtmlNode root;
@@ -583,84 +708,17 @@ namespace WpfLightNovelClient
                 txtNotificator.Text = exc.Message;
                 return;
             }
-            //Unselect the current book to prevent issues later on when naming a file
-            bookList.SelectedItem = null;
-
-            List<ChapterDto> chapters = new List<ChapterDto>();
-            try
+            BookDto b = new BookDto
             {
-                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
-            }
-            catch { }
-            List<HtmlNode> p = new List<HtmlNode>();
-            List<string> classTextEntries = new List<string>();
-            classTextEntries.Add("collapseomatic_content");
-            classTextEntries.Add("chapters");
-            classTextEntries.Add("page");
-            
-            //Get all the links that could be chapters
-            try
-            {
-                p = root.Descendants()
-                    .Where(n => n.GetAttributeValue("role", "") == "main"|| n.GetAttributeValue("id", "") == "main"
-                            || n.GetAttributeValue("class", "") == "main")
-                    .First()
-                    .Descendants()
-                    .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
-                    .ToList();
-            }
-            catch {
-                bool found = false;
-                foreach (var textEntry in classTextEntries)
-                {
-                    try
-                    {
-                        p = root.Descendants()
-                           .Where(n => n.GetAttributeValue("class", "").Contains(textEntry))
-                           .First()
-                           .Descendants()
-                           .Where(n => n.Name.Equals("a"))
-                           .ToList();
-                        if (p.Count > 0)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    catch { }
-                }
-                if(!found) txtNotificator.Text = "No chapters found";
-            }
-            List<string> urlList = new List<string>();
-            //Add all the potential chapters to the chapterlist
-            for (int i = 0; i < p.Count(); i++)
-            {
-                
-                if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "")
-                {
-                    if (!urlList.Contains(p.ElementAt(i).GetAttributeValue("href", "")))
-                    {
-                        urlList.Add(p.ElementAt(i).GetAttributeValue("href", ""));
-                        chapters.Add(new ChapterDto
-                        {
-                            ChapterId = i + 1,
-                            ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
-                            DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
-                        });
-                    }
-                    else
-                    {
-                        p.RemoveAt(i);
-                        i--;
-                    }
-                }
-                else
-                {
-                    p.RemoveAt(i);
-                    i--;
-                }
-            }
-            UpdateItems(chapters);
+                Name = (CustomBookTxt.Text.Count() > 0)
+                        ? CustomBookTxt.Text
+                        : "Custom",
+                IndexUrl = findBook.Text
+            };
+            listOfBooks.Insert(0,b);
+            displayedBookList.Insert(0, b);
+            bookList.Items.Refresh();
+            bookList.SelectedItem = bookList.Items.GetItemAt(displayedBookList.Count - 1);
         }
 
         private void getCustomChapterBtn_Click(object sender, RoutedEventArgs e)
@@ -672,21 +730,10 @@ namespace WpfLightNovelClient
             ChapterDto c = w.Chapter;
             if (w.Success)
             {
-                try
-                {
-                    //c.ChapterId = ((List<ChapterDto>)chapterList.ItemsSource).Count + 1;
-                    c.ChapterId = 80;
-                    //chapters = ((List<ChapterDto>)chapterList.ItemsSource);
-                    currentChapterList.Add(c);
-                    chapterList.Items.Refresh();
-                }
-                catch (Exception)
-                {
-                    c.ChapterId = 1;
-                }
-                //chapters.Add(c);
+                c.ChapterId = currentChapterList.Count;
+                currentChapterList.Add(c);
+                chapterList.Items.Refresh();
             }
-            //UpdateItems(chapters);
         }
     }
 }
