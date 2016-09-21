@@ -6,7 +6,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Metro/Metro.MSControls.Core.Implicit.xaml" />
                 <ResourceDictionary Source="Themes/Metro/Metro.MSControls.Toolkit.Implicit.xaml" />
-                <!--ResourceDictionary Source="Themes/DarkDesignDictionary.xaml" />-->
+                
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary></Application.Resources>
 </Application>

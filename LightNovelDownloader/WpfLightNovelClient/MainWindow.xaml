@@ -4,18 +4,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfLightNovelClient"
-        xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors" x:Class="WpfLightNovelClient.MainWindow"
-        mc:Ignorable="d"
-        Title="LightNovelDownloader" Height="700" Width="1000"
+        x:Class="WpfLightNovelClient.MainWindow"
+        mc:Ignorable="d" WindowStartupLocation="CenterScreen"
+        Title="LightNovelDownloader" Height="700" Width="1000" MinWidth="500" MinHeight="190"
         Loaded="Window_Loaded">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="0.8*" />
-            <RowDefinition Height="18*" />
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1.5*" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
@@ -50,10 +51,10 @@
                 <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
             </StatusBarItem>
             <StatusBarItem HorizontalContentAlignment="Stretch">
-                <ProgressBar Style="{x:Null}" x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
+                <ProgressBar Style="{StaticResource CommonProgressBar}" x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
             </StatusBarItem>
         </StatusBar>
-        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Stretch">
+        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Stretch">
             <TextBox.Style>
                 <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
                     <Style.Resources>
@@ -77,12 +78,12 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <Grid Grid.Column="3">
+        <Grid Grid.Column="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Go" Click="CustomSiteBtn_Click"></Button>
+            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Add" Click="CustomSiteBtn_Click"></Button>
             <TextBox Name="CustomBookTxt">
                 <TextBox.Style>
                     <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
@@ -109,18 +110,12 @@
             </TextBox>
         </Grid>
         
-        <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click"/>
-        <Grid Grid.Column="2" Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="refreshChapterBtn" Content="Latest Chapters" Click="refreshChapterBtn_Click"/>
-            <Button Grid.Column="1" x:Name="getCustomChapterBtn" Content="Add Chapter" Click="getCustomChapterBtn_Click"/>
-        </Grid>
-        
-        <Button x:Name="settingsBtn" Grid.Column="3" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click"/>
+        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Latest Chapters" Click="refreshChapterBtn_Click"/>
+        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add Chapter" Click="getCustomChapterBtn_Click"/>
+
+        <Button x:Name="settingsBtn" Grid.Column="4" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click"/>
 
     </Grid>
 </Window>

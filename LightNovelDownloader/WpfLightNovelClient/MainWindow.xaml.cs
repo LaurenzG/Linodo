@@ -172,10 +172,18 @@ namespace WpfLightNovelClient
 
         private void bookList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            
+            bookList.IsEnabled = false;
+            txtNotificator.Text = "Getting Chapters";
             BackgroundWorker work = new BackgroundWorker();
-            work.DoWork += loadChapters; ;
+            work.DoWork += loadChapters;
             work.RunWorkerAsync(bookList.SelectedItem);
+            work.RunWorkerCompleted += Work_RunWorkerSelectedItemComplete;
+        }
+
+        private void Work_RunWorkerSelectedItemComplete(object sender, RunWorkerCompletedEventArgs e)
+        {
+            bookList.IsEnabled = true;
+            txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator), new object[] { "" });
         }
 
         private void loadChapters(object sender, DoWorkEventArgs eh)
@@ -218,7 +226,7 @@ namespace WpfLightNovelClient
                         .Where(n => n.Name.Equals("a") &&
                             (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")))
                         .ToList();
-                    if (p.Count < 2)
+                    if (p.Count < 2 || p[p.Count/2].GetAttributeValue("href", "").ToLower().Contains("moonbunnycafe"))
                     {
                         throw new Exception();
                     }
@@ -479,7 +487,7 @@ namespace WpfLightNovelClient
                 {
                     p = root.Descendants()
                     .Where(n => (n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
-                     && !n.GetAttributeValue("class", "").Contains("header"))
+                     && !n.GetAttributeValue("class", "").Contains("header") && !n.GetAttributeValue("class", "").Contains("menu"))
                     .First();
                 }
                 catch (Exception)
@@ -492,14 +500,26 @@ namespace WpfLightNovelClient
                     }
                     catch (Exception)
                     {
-                        p = new HtmlDocument().DocumentNode;
+                        try
+                        {
+                          p = root.Descendants()
+                           .Where(n => n.GetAttributeValue("class", "").Contains("content"))
+                           .First();
+
+                        }
+                        catch (Exception)
+                        {
+                            p = new HtmlDocument().DocumentNode;
+                        }
+                       
                     }
                 }
             }
             //Remove comments
             try
             {
-                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
+                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")||n.GetAttributeValue("class","").ToLower().Contains("comment")).First().Remove();
+                root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
             }
             catch { }
             //Remove links to other chapters including the ToC
@@ -528,10 +548,10 @@ namespace WpfLightNovelClient
             {
                 while (true)
                 {
-                    p.RemoveChild(p.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("sharedaddy")).First());
+                    p.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("sharedaddy")).First().Remove();
                 }
             }
-            catch { }
+            catch (Exception e){}
             //Remove ads on WuxiaWorld
             if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
             {
@@ -645,22 +665,20 @@ namespace WpfLightNovelClient
                             c.DisplayName = "Chapter " + c.ChapterId;
                         }
                         chapters.Add(c);
+                        chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
+                                        new object[] { chapters });
                         next = nextChapter(root);
                     }
                     else throw new HttpException();
                     root = changeSite(root);
                 }
-                catch (InvalidOperationException e)
+                catch (InvalidOperationException)
                 {
                     stop = true;
-                    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-                    new object[] { chapters });   
                 }
                 catch (HttpException)
                 {
                     stop = true;
-                    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-                                        new object[] { chapters });
                 }
             }
         }
@@ -687,7 +705,7 @@ namespace WpfLightNovelClient
         {
             txtNotificator.Text = "File created successfully,click to open!";
             txtNotificator.Tag = path;
-            txtNotificator.AddHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));
+            txtNotificator.AddHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));           
             System.Timers.Timer timer = new System.Timers.Timer(9000) { Enabled = true };
             timer.Elapsed += (sender, args) =>
             {

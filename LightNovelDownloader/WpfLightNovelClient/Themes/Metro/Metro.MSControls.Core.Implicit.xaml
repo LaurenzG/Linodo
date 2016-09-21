@@ -418,57 +418,64 @@
   </Style>
 
   <!-- ********************************** ProgressBar Style **********************************-->
-  <Style x:Key="ProgressBarStyle" TargetType="{x:Type ProgressBar}">
-    <Setter Property="Foreground" Value="{StaticResource ProgressBarForegroundBrush}" />
-    <Setter Property="Background" Value="{StaticResource ProgressBarBackgroundBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="{x:Type ProgressBar}">
-          <Grid x:Name="TemplateRoot" SnapsToDevicePixels="true">
-            <VisualStateManager.VisualStateGroups>
-              <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Determinate" />
-                <VisualState x:Name="Indeterminate">
-                  <Storyboard RepeatBehavior="Forever">
-                    <DoubleAnimation Duration="00:00:.5" From="0" To="20" Storyboard.TargetProperty="(Shape.Fill).(LinearGradientBrush.Transform).(TransformGroup.Children)[0].X" Storyboard.TargetName="IndeterminateGradientFill" />
-                  </Storyboard>
-                </VisualState>
-              </VisualStateGroup>
-            </VisualStateManager.VisualStateGroups>
-            <Border x:Name="ProgressBarTrack" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" />
-            <Rectangle x:Name="PART_Track" Margin="{TemplateBinding BorderThickness}" />
-            <Decorator x:Name="PART_Indicator" HorizontalAlignment="Left" Margin="{TemplateBinding BorderThickness}">
-              <Grid x:Name="Foreground">
-                <Rectangle x:Name="Indicator" Fill="{TemplateBinding Foreground}" />
-              </Grid>
-            </Decorator>
-            <Grid x:Name="IndeterminateRoot" Visibility="Collapsed">
-              <Rectangle x:Name="IndeterminateSolidFill" Fill="{TemplateBinding Foreground}" Margin="{TemplateBinding BorderThickness}" Opacity="1" RenderTransformOrigin="0.5,0.5" StrokeThickness="0" />
-              <Rectangle x:Name="IndeterminateGradientFill" Fill="{StaticResource ProgressBarIndeterminateBackgroundBrush}" Margin="{TemplateBinding BorderThickness}" StrokeThickness="1" />
-            </Grid>
-          </Grid>
-          <ControlTemplate.Triggers>
-            <Trigger Property="Orientation" Value="Vertical">
-              <Setter Property="LayoutTransform" TargetName="TemplateRoot">
-                <Setter.Value>
-                  <RotateTransform Angle="-90" />
-                </Setter.Value>
-              </Setter>
-            </Trigger>
-            <Trigger Property="IsIndeterminate" Value="true">
-              <Setter Property="Visibility" TargetName="Indicator" Value="Collapsed" />
-              <Setter Property="Visibility" TargetName="IndeterminateRoot" Value="Visible" />
-            </Trigger>
-            <Trigger Property="IsIndeterminate" Value="false">
-            </Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
+    <Style x:Key="CommonProgressBar" TargetType="ProgressBar" >
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ProgressBar}">
+                    <Grid x:Name="TemplateRoot" Height="24">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Determinate"/>
+                                <VisualState x:Name="Indeterminate">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" Storyboard.TargetName="Animation">
+                                            <EasingDoubleKeyFrame KeyTime="0" Value="0.25"/>
+                                            <EasingDoubleKeyFrame KeyTime="0:0:1" Value="0.25"/>
+                                            <EasingDoubleKeyFrame KeyTime="0:0:2" Value="0.25"/>
+                                        </DoubleAnimationUsingKeyFrames>
+                                        <PointAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransformOrigin)" Storyboard.TargetName="Animation">
+                                            <EasingPointKeyFrame KeyTime="0" Value="-0.5,0.5"/>
+                                            <EasingPointKeyFrame KeyTime="0:0:1" Value="0.5,0.5"/>
+                                            <EasingPointKeyFrame KeyTime="0:0:2" Value="1.5,0.5"/>
+                                        </PointAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="Transparent" CornerRadius="10"/>
+                        <Rectangle x:Name="PART_Track"/>
+                        <Grid x:Name="PART_Indicator" ClipToBounds="True" HorizontalAlignment="Left">
+                            <Rectangle x:Name="Indicator" Fill="LightBlue" RadiusX="10" RadiusY="10"/>
+                            <Rectangle x:Name="Animation" Fill="LightBlue" RenderTransformOrigin="0.5,0.5" RadiusX="10" RadiusY="10">
+                                <Rectangle.RenderTransform>
+                                    <TransformGroup>
+                                        <ScaleTransform/>
+                                        <SkewTransform/>
+                                        <RotateTransform/>
+                                        <TranslateTransform/>
+                                    </TransformGroup>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter Property="LayoutTransform" TargetName="TemplateRoot">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsIndeterminate" Value="True">
+                            <Setter Property="Visibility" TargetName="Indicator" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
-  <!-- ********************************** PasswordBox Style **********************************-->
+    <!-- ********************************** PasswordBox Style **********************************-->
   <Style x:Key="PasswordBoxStyle" TargetType="{x:Type PasswordBox}">
     <Setter Property="FontFamily" Value="Segoe UI" />
     <Setter Property="FontSize" Value="13.333" />
