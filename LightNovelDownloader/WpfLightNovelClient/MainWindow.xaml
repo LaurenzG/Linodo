@@ -15,7 +15,8 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.5*" />
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
@@ -54,13 +55,13 @@
                 <ProgressBar Style="{StaticResource CommonProgressBar}" x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
             </StatusBarItem>
         </StatusBar>
-        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Stretch">
+        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="3" VerticalContentAlignment="Center" VerticalAlignment="Stretch">
             <TextBox.Style>
                 <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
                     <Style.Resources>
                         <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
                             <VisualBrush.Visual>
-                                <Label Content="Paste the link to the Table of Content of any other lightnovel here!" Foreground="LightGray" />
+                                <Label Content="Paste the Table of Content link here!" Foreground="LightGray" />
                             </VisualBrush.Visual>
                         </VisualBrush>
                     </Style.Resources>
@@ -78,47 +79,40 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <Grid Grid.Column="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Add" Click="CustomSiteBtn_Click">
-                <Button.ToolTip>
-                    <ToolTip>
-                        <StackPanel>
-                            <TextBlock>Adds a book to the list of books.</TextBlock>
-                        </StackPanel>
-                    </ToolTip>
-                </Button.ToolTip>
-            </Button>
-            <TextBox Name="CustomBookTxt">
-                <TextBox.Style>
-                    <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-                        <Style.Resources>
-                            <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
-                                <VisualBrush.Visual>
-                                    <Label Content="Insert Name" Foreground="LightGray" />
-                                </VisualBrush.Visual>
-                            </VisualBrush>
-                        </Style.Resources>
-                        <Style.Triggers>
-                            <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
-                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
-                            </Trigger>
-                            <Trigger Property="Text" Value="{x:Null}">
-                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="Background" Value="White" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBox.Style>
-            </TextBox>
-        </Grid>
-        
-        <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Button Name="CustomSiteBtn" Grid.Column="5" Content="Add" Click="CustomSiteBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Adds a book to the list of books.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <TextBox Name="CustomBookTxt" Grid.Column="4"  VerticalContentAlignment="Center">
+            <TextBox.Style>
+                <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    <Style.Resources>
+                        <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                            <VisualBrush.Visual>
+                                <Label Content="Insert Name" Foreground="LightGray" />
+                            </VisualBrush.Visual>
+                        </VisualBrush>
+                    </Style.Resources>
+                    <Style.Triggers>
+                        <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
+                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                        </Trigger>
+                        <Trigger Property="Text" Value="{x:Null}">
+                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="Background" Value="White" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
+        <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
@@ -128,7 +122,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Latest Chapters" Click="refreshChapterBtn_Click">
+        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Get Latest" Click="refreshChapterBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -137,7 +131,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add Chapter" Click="getCustomChapterBtn_Click">
+        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add" Click="getCustomChapterBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -147,11 +141,20 @@
             </Button.ToolTip>
         </Button>
 
-        <Button x:Name="settingsBtn" Grid.Column="4" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click">
+        <Button x:Name="settingsBtn" Grid.Column="5" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
                         <TextBlock>Opens the settings in a new window.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <Button x:Name="deleteBtn" Grid.Column="4" Grid.Row="2" Content="Delete" HorizontalAlignment="Stretch" Click="deleteBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Deletes all the selected Chapters.</TextBlock>
                     </StackPanel>
                 </ToolTip>
             </Button.ToolTip>

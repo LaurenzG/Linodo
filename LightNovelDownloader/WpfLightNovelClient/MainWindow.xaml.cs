@@ -177,6 +177,7 @@ namespace WpfLightNovelClient
             {
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                     new object[] { e.Message });
+                return null;
             }
             return page.DocumentNode;
         }
@@ -222,12 +223,15 @@ namespace WpfLightNovelClient
                     {
 
                     }
+                //remove sidebars
+                try
+                {
+                    root.Descendants()
+                        .Where(n => (n.GetAttributeValue("role", "") == "complementary" || n.GetAttributeValue("class","")=="sidebar") && n.Name == "div")
+                        .First().RemoveAll();
+                }
+                catch { }
                 List<HtmlNode> p = new List<HtmlNode>();
-                List<string> classTextEntries = new List<string>();
-                classTextEntries.Add("collapseomatic_content");
-                classTextEntries.Add("chapters");
-                classTextEntries.Add("page");
-                classTextEntries.Add("contents");
                 try
                 {
                     p = root.Descendants()
@@ -235,20 +239,23 @@ namespace WpfLightNovelClient
                         .Single()
                         .Descendants()
                         .Where(n => n.Name.Equals("a") &&
-                            (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")))
+                            (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")||
+                             n.GetAttributeValue("href", "").ToLower().Contains("prologue-") || n.InnerText.ToLower().Contains("prologue")))
                         .ToList();
-                    if (p.Count < 2 || p[p.Count/2].GetAttributeValue("href", "").ToLower().Contains("moonbunnycafe"))
+                    if (p.Count < 2)
                     {
                         throw new Exception();
                     }
                 }
                 catch
                 {
-                    try
-                    {
-                        root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")).First().Remove();
-                    }
-                    catch { }
+                    root = removeComments(root);
+                    //try
+                    //{
+                    //    root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments") || n.GetAttributeValue("class", "").ToLower().Contains("comment")).First().Remove();
+                    //    root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
+                    //}
+                    //catch { }
                     try
                     {
                         p = root.Descendants()
@@ -265,6 +272,11 @@ namespace WpfLightNovelClient
                     }
                     catch
                     {
+                        List<string> classTextEntries = new List<string>();
+                        classTextEntries.Add("collapseomatic_content");
+                        classTextEntries.Add("chapters");
+                        classTextEntries.Add("page");
+                        classTextEntries.Add("contents");
                         bool found = false;
                         foreach (var textEntry in classTextEntries)
                         {
@@ -300,7 +312,7 @@ namespace WpfLightNovelClient
                 List<string> urlList = new List<string>();
                 for (int i = 0; i < p.Count(); i++)
                 {
-                    if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "")
+                    if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "" && p.ElementAt(i).InnerText!="Home")
                     {
                         if (!urlList.Contains(p.ElementAt(i).GetAttributeValue("href", "")))
                         {
@@ -335,6 +347,20 @@ namespace WpfLightNovelClient
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                     new object[] { w.Message });
             }
+        }
+
+        private HtmlNode removeComments(HtmlNode root)
+        {
+            try
+            {
+                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments") || n.GetAttributeValue("class", "").ToLower().Contains("comment")).First().Remove();
+                root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
+            }
+            catch
+            {
+                
+            }
+            return root;
         }
 
         private void RefreshList()
@@ -425,10 +451,15 @@ namespace WpfLightNovelClient
             try
             {
                 int i = 0;
+                string s;
                 foreach (ChapterDto item in chapters)
                 {
-                    lastChapter = item;
-                    content.Add(addSite(item));
+                    s = addSite(item);
+                    if (!s.Equals(""))
+                    {
+                        lastChapter = item;
+                        content.Add(addSite(item));
+                    }
                     i++;
                     (sender as BackgroundWorker).ReportProgress(i*100/chapters.Count);
                 }
@@ -438,48 +469,65 @@ namespace WpfLightNovelClient
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                         new object[] { "Some chapters might not be displayed properly" });
             }
-            //Get the default/saved path for the file to be saved at
-            string path = (Properties.Settings.Default["Path"].Equals("")) 
-                ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-                : (string)Properties.Settings.Default["Path"];
-
-            //Get the book, to name the site accordingly
-            BookDto book = (BookDto)arguments[1];
-            string ending = ((bool)Properties.Settings.Default["AsEpub"]
-                ? ".epub"
-                : ".html");
-            
-            if (chapters.Count > 1)
-                path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId+ending;
-            else
-                path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId+ending ;
-
-
-            if ((bool)Properties.Settings.Default["AsEpub"])
+            if (content.Count > 0)
             {
-                EpubOnFly epub = new EpubOnFly();
-                epub.Metadata.Creator = "Tangrooner";
-                epub.Metadata.Title = book.Name;
-                for (int i = 0; i < content.Count; i++)
+                //Get the default/saved path for the file to be saved at
+                string path = (Properties.Settings.Default["Path"].Equals(""))
+                    ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                    : (string)Properties.Settings.Default["Path"];
+
+                //Get the book, to name the site accordingly
+                BookDto book = (BookDto)arguments[1];
+                string ending = ((bool)Properties.Settings.Default["AsEpub"]
+                    ? ".epub"
+                    : ".html");
+
+                if (chapters.Count > 1)
+                    path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId + ending;
+                else
+                    path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId + ending;
+
+
+                if ((bool)Properties.Settings.Default["AsEpub"])
                 {
-                    epub.AddContent(book.Name+"-"+ (firstChapter.ChapterId+i) + ".html", string.Join("", css) + content[i]);
+                    EpubOnFly epub = new EpubOnFly();
+                    epub.Metadata.Creator = "Tangrooner";
+                    epub.Metadata.Title = book.Name;
+                    for (int i = 0; i < content.Count; i++)
+                    {
+                        epub.AddContent(book.Name + "-" + (firstChapter.ChapterId + i) + ".html", string.Join("", css) + content[i]);
+                    }
+                    epub.BuildToFile(path);
                 }
-                epub.BuildToFile(path);
-            }
-            else
+                else
+                {
+                    css.AddRange(content);
+                    System.IO.File.WriteAllLines(path, css);
+                }
+
+                txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
+                        new object[] { path });
+                downloadProgress.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar));
+            } else
             {
-                css.AddRange(content);
-                System.IO.File.WriteAllLines(path, css);
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                        new object[] { "Failed to download the chapter!" });
+                downloadProgress.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar));
             }
-            
-            txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
-                    new object[] { path });
+        }
+
+        private void HideProgressBar()
+        {
+            downloadProgress.Visibility = Visibility.Collapsed;
         }
 
         private string addSite(ChapterDto item)
         {
-            string s = "";
             var root = switchSite(item.ChapterUrl);
+            if (root == null)
+            {
+                return "";
+            }
             HtmlNode p;
             //Tries to find the main part of the chapter
             try
@@ -498,7 +546,8 @@ namespace WpfLightNovelClient
                 {
                     p = root.Descendants()
                     .Where(n => (n.GetAttributeValue("class", "").Contains("main") || n.GetAttributeValue("id", "").Contains("main"))
-                     && !n.GetAttributeValue("class", "").Contains("header") && !n.GetAttributeValue("class", "").Contains("menu"))
+                     && !n.GetAttributeValue("class", "").Contains("header") && !n.GetAttributeValue("class", "").Contains("menu")
+                     && !n.GetAttributeValue("class","").Contains("navigation"))
                     .First();
                 }
                 catch (Exception)
@@ -527,12 +576,13 @@ namespace WpfLightNovelClient
                 }
             }
             //Remove comments
-            try
-            {
-                root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")||n.GetAttributeValue("class","").ToLower().Contains("comment")).First().Remove();
-                root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
-            }
-            catch { }
+            root = removeComments(root);
+            //try
+            //{
+            //    root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")||n.GetAttributeValue("class","").ToLower().Contains("comment")).First().Remove();
+            //    root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
+            //}
+            //catch { }
             //Remove links to other chapters including the ToC
             try
             {
@@ -562,7 +612,7 @@ namespace WpfLightNovelClient
                     p.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("sharedaddy")).First().Remove();
                 }
             }
-            catch (Exception e){}
+            catch (Exception){}
             //Remove ads on WuxiaWorld
             if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
             {
@@ -576,9 +626,9 @@ namespace WpfLightNovelClient
             //Adds the Html to the list if the content is not empty
             if (p.LastChild != null)
             {
-                s = p.InnerHtml;
+                return encodeString(p.InnerHtml);
             }
-            return encodeString(s);
+            return "";
         }
 
         private string encodeString(string s)
@@ -618,40 +668,40 @@ namespace WpfLightNovelClient
             }
         }
         private delegate void UpdateProgressBarCallback(string path);
+        private delegate void HideProgressBarCallback();
         private delegate void UpdateTxtNotificatorCallback(string msg);
         private delegate void RefreshListCallback();
-        private delegate void UpdateItemsCallback(List<ChapterDto> c);
+        private delegate void UpdateItemsCallback(ChapterDto c);
         private void getLatestChapters(List<ChapterDto> chapters)
         {
             bool success=false;
             var root = new HtmlDocument().DocumentNode;
+            HtmlNode next= new HtmlDocument().DocumentNode;
             //Remove bad links to get to the latest one that is working
             while (!success && chapters.Count>0)
             {
                 try
                 {
                     root = switchSite(chapters.Last().ChapterUrl);
+                    next = nextChapter(root);
+                    root = changeSite(root);
                     success = true;
                 }
                 catch (Exception)
                 {
+                    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
+                                        new object[] { chapters.Last() });
                     chapters.Remove(chapters.Last());
                 }
             }
-            HtmlNode next;
-            try
-            {
-                next = nextChapter(root);
-                root = changeSite(root);
-            }
-            catch (Exception)
-            {
-                if(chapters.ElementAt(chapters.Count-1).DisplayName=="")
-                    chapters.RemoveAt(chapters.Count - 1);
-                chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-                new object[] { chapters });
-                return;
-            }
+            //catch (Exception)
+            //{
+            //    if(chapters.ElementAt(chapters.Count-1).DisplayName=="")
+            //        chapters.RemoveAt(chapters.Count - 1);
+            //    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
+            //    new object[] { chapters });
+            //    return;
+            //}
             
             bool stop = false;
             
@@ -667,7 +717,8 @@ namespace WpfLightNovelClient
                         c.ChapterId = chapters.Count+1;
                         try
                         {
-                            c.DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")).FirstOrDefault().InnerText);
+                            c.DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => (n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")) ||
+                                                                                                  n.GetAttributeValue("class","")=="entry-title").FirstOrDefault().InnerText);
                         }
                         catch (Exception)
                         {
@@ -677,19 +728,16 @@ namespace WpfLightNovelClient
                         }
                         chapters.Add(c);
                         chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-                                        new object[] { chapters });
+                                        new object[] { c });
                         next = nextChapter(root);
                     }
                     else throw new HttpException();
                     root = changeSite(root);
                 }
-                catch (InvalidOperationException)
+                catch (Exception)
                 {
                     stop = true;
-                }
-                catch (HttpException)
-                {
-                    stop = true;
+                    txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator), new object[] { "" });
                 }
             }
         }
@@ -705,19 +753,18 @@ namespace WpfLightNovelClient
                     .Where(n => n.Name == "a" && n.InnerText.ToLower().Contains("next"))
                     .First();
         }
-        private void UpdateItems(List<ChapterDto> c)
+        private void UpdateItems(ChapterDto c)
         {
-            currentChapterList.Clear();
-            currentChapterList.AddRange(c);
+            if (currentChapterList.Contains(c)) currentChapterList.Remove(c);
+            else currentChapterList.Add(c);
             chapterList.Items.Refresh();
-            txtNotificator.Text = "";
         }
         private void UpdateProgress(string path)
         {
             txtNotificator.Text = "File created successfully,click to open!";
             txtNotificator.Tag = path;
             txtNotificator.AddHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));           
-            System.Timers.Timer timer = new System.Timers.Timer(9000) { Enabled = true };
+            System.Timers.Timer timer = new System.Timers.Timer(5000) { Enabled = true };
             timer.Elapsed += (sender, args) =>
             {
                 txtNotificator.RemoveHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));
@@ -726,9 +773,7 @@ namespace WpfLightNovelClient
                                         new object[] { "" });
 
                 timer.Dispose();
-                
             };
-            downloadProgress.Visibility = Visibility.Collapsed;
         }
 
         private void txtNotificator_MouseDown(object sender, RoutedEventArgs e)
@@ -789,6 +834,15 @@ namespace WpfLightNovelClient
                 currentChapterList.Add(c);
                 chapterList.Items.Refresh();
             }
+        }
+
+        private void deleteBtn_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (ChapterDto item in chapterList.SelectedItems)
+            {
+                currentChapterList.Remove(item);
+            }
+            chapterList.Items.Refresh();
         }
     }
 }
