@@ -83,7 +83,15 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Add" Click="CustomSiteBtn_Click"></Button>
+            <Button Name="CustomSiteBtn" Grid.Column="1" Content="Add" Click="CustomSiteBtn_Click">
+                <Button.ToolTip>
+                    <ToolTip>
+                        <StackPanel>
+                            <TextBlock>Adds a book to the list of books.</TextBlock>
+                        </StackPanel>
+                    </ToolTip>
+                </Button.ToolTip>
+            </Button>
             <TextBox Name="CustomBookTxt">
                 <TextBox.Style>
                     <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
@@ -111,11 +119,43 @@
         </Grid>
         
         <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click"/>
-        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Latest Chapters" Click="refreshChapterBtn_Click"/>
-        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add Chapter" Click="getCustomChapterBtn_Click"/>
+        <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Downloads the selected chapters as a html or epub site. The chapters in the generated file are in the same order as they were selected.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Latest Chapters" Click="refreshChapterBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Gets the next chapters of the last item in the list. If that's not a chapter try adding it with the Add Chapter button.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
+        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add Chapter" Click="getCustomChapterBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Opens a dialog window where you can add the chapter url and name to the chapter list.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
 
-        <Button x:Name="settingsBtn" Grid.Column="4" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click"/>
+        <Button x:Name="settingsBtn" Grid.Column="4" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click">
+            <Button.ToolTip>
+                <ToolTip>
+                    <StackPanel>
+                        <TextBlock>Opens the settings in a new window.</TextBlock>
+                    </StackPanel>
+                </ToolTip>
+            </Button.ToolTip>
+        </Button>
 
     </Grid>
 </Window>

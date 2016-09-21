@@ -41,7 +41,17 @@ namespace WpfLightNovelClient
             chapterList.ItemsSource = currentChapterList;
             bookList.ItemsSource = displayedBookList;
             asyncLoadBooks();
+            EventManager.RegisterClassHandler(typeof(FrameworkElement), FrameworkElement.ToolTipOpeningEvent, new ToolTipEventHandler(ToolTipHandler));
+
         }
+
+        private void ToolTipHandler(object sender, ToolTipEventArgs e)
+        {
+            // To stop the tooltip from appearing, mark the event as handled
+            if(!(bool)Properties.Settings.Default["ShowToolTips"])
+                e.Handled = true;
+        }
+
         private void asyncLoadBooks()
         {
             txtNotificator.Text = "Loading Books";
@@ -56,6 +66,7 @@ namespace WpfLightNovelClient
             txtNotificator.Text = "";
         }
 
+        
         private void loadBooks(object sender, DoWorkEventArgs eh)
         {
             var categoryList = new List<BookDto>();
@@ -715,6 +726,7 @@ namespace WpfLightNovelClient
                                         new object[] { "" });
 
                 timer.Dispose();
+                
             };
             downloadProgress.Visibility = Visibility.Collapsed;
         }

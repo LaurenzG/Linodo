@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfLightNovelClient" WindowStartupLocation="CenterOwner"
-        mc:Ignorable="d" MinHeight="102" MaxHeight="102" Width="300">
+        mc:Ignorable="d" MinHeight="133" MaxHeight="133" Width="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -17,7 +18,9 @@
         </Grid.ColumnDefinitions>
         <Button Name="FolderBtn" Grid.Column="2" Content="..." Margin="2" VerticalContentAlignment="Center" Click="FolderBtn_Click"></Button>
         <TextBlock Name="pathTxt" Grid.ColumnSpan="2" TextAlignment="Center" VerticalAlignment="Center" Margin="0 3 0 0"></TextBlock>
-        <Button Name="SaveAsBtn" Grid.Row="1" Background="LavenderBlush" Click="SaveAsBtn_Click"></Button>
-        <Button Name="ReturnBtn" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Content="Save and Return" Background="LavenderBlush" Click="ReturnBtn_Click"></Button>
+        <TextBlock Grid.ColumnSpan="2" Grid.Row="1" TextAlignment="Center" VerticalAlignment="Center">Show Tooltips</TextBlock>
+        <CheckBox Name="ToolTipCheckBox" Grid.Column="3" Grid.Row="1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Click="ToolTipCheckBox_Click"/>
+        <Button Name="SaveAsBtn" Grid.Row="2" Background="LavenderBlush" Click="SaveAsBtn_Click"></Button>
+        <Button Name="ReturnBtn" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Content="Save and Return" Background="LavenderBlush" Click="ReturnBtn_Click"></Button>
     </Grid>
 </Window>

@@ -28,6 +28,7 @@ namespace WpfLightNovelClient
             SaveAsBtn.Content = ((bool)Properties.Settings.Default["AsEpub"])
                 ? "Save as Epub"
                 : "Save as Html";
+            ToolTipCheckBox.IsChecked = ((bool)Properties.Settings.Default["ShowToolTips"]);
         }
 
         private void FolderBtn_Click(object sender, RoutedEventArgs e)
@@ -41,6 +42,8 @@ namespace WpfLightNovelClient
                 Properties.Settings.Default.Save();
             }
         }
+
+
 
         private void ReturnBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -62,6 +65,11 @@ namespace WpfLightNovelClient
             {
                 SaveAsBtn.Content = "Save as Epub";
             }
+        }
+
+        private void ToolTipCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default["ShowToolTips"] = ToolTipCheckBox.IsChecked;
         }
     }
 }
