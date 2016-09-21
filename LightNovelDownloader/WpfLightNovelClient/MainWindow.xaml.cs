@@ -88,11 +88,7 @@ namespace WpfLightNovelClient
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
             }
-            catch (InvalidOperationException)
-            {
-                MessageBox.Show("WuxiaWorld failed to load!");
-            }
-            catch (TaskCanceledException)
+            catch (Exception)
             {
                 MessageBox.Show("WuxiaWorld failed to load!");
             }
@@ -107,11 +103,7 @@ namespace WpfLightNovelClient
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
             }
-            catch (InvalidOperationException)
-            {
-                MessageBox.Show("TranslationNations failed to load!");
-            }
-            catch (TaskCanceledException)
+            catch (Exception)
             {
                 MessageBox.Show("TranslationNations failed to load!");
             }
@@ -127,13 +119,9 @@ namespace WpfLightNovelClient
                 MessageBox.Show(e.Message);
                 txtNotificator.Text = e.Message;
             }
-            catch(InvalidOperationException ioe)
+            catch (Exception)
             {
                 MessageBox.Show("GravityTales failed to load!");
-            }
-            catch (TaskCanceledException)
-            {
-                MessageBox.Show("TranslationNations failed to load!");
             }
             #endregion
             displayedBookList.Clear();
@@ -204,7 +192,7 @@ namespace WpfLightNovelClient
             
             
             if (selectedBook == null) return;
-            Book book = new Book
+            BookDto book = new BookDto
             {
                 Name = selectedBook.Name,
                 IndexUrl = selectedBook.IndexUrl
@@ -250,12 +238,6 @@ namespace WpfLightNovelClient
                 catch
                 {
                     root = removeComments(root);
-                    //try
-                    //{
-                    //    root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments") || n.GetAttributeValue("class", "").ToLower().Contains("comment")).First().Remove();
-                    //    root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
-                    //}
-                    //catch { }
                     try
                     {
                         p = root.Descendants()
@@ -321,7 +303,7 @@ namespace WpfLightNovelClient
                             {
                                 ChapterId = i + 1,
                                 ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
-                                DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText)
+                                DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText).Trim('\n')
                             });
                         }
                         else
@@ -458,7 +440,7 @@ namespace WpfLightNovelClient
                     if (!s.Equals(""))
                     {
                         lastChapter = item;
-                        content.Add(addSite(item));
+                        content.Add(s);
                     }
                     i++;
                     (sender as BackgroundWorker).ReportProgress(i*100/chapters.Count);
@@ -575,28 +557,7 @@ namespace WpfLightNovelClient
                     }
                 }
             }
-            //Remove comments
             root = removeComments(root);
-            //try
-            //{
-            //    root.Descendants().Where(n => n.GetAttributeValue("id", "").ToLower().Contains("comments")||n.GetAttributeValue("class","").ToLower().Contains("comment")).First().Remove();
-            //    root.Descendants().Where(n => n.GetAttributeValue("class", "").ToLower().Contains("respond")).First().Remove();
-            //}
-            //catch { }
-            //Remove links to other chapters including the ToC
-            try
-            {
-                var a = p.Descendants()
-                .Where(n => n.Name == "a" &&
-                    (n.InnerText.ToLower().Contains("next") || n.InnerText.ToLower().Contains("previous") ||
-                    n.InnerText.ToLower().Contains("table of content") || n.InnerText.ToLower().Contains("index")))
-                .ToList();
-                for (int k = 0; k < a.Count(); k++)
-                {
-                    a[k].Remove();
-                }
-            }
-            catch { }
             //Add title
             try
             {
@@ -621,7 +582,6 @@ namespace WpfLightNovelClient
                     p.Descendants().Where(n => n.GetAttributeValue("class", "") == "code-block code-block-4 ai-viewport-3").First().RemoveAll();
                 }
                 catch   {   }
-               
             }
             //Adds the Html to the list if the content is not empty
             if (p.LastChild != null)
