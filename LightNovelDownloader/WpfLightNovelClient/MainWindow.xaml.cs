@@ -150,13 +150,13 @@ namespace WpfLightNovelClient
         }
         private HtmlNode switchSite(string url)
         {
-            if (!url.Substring(0, 6).Contains("http"))
-            {
-                url = "http://" + url;
-            }
             var page = new HtmlDocument();
             try
             {
+                if (!url.Substring(0, 6).Contains("http"))
+                {
+                    url = "http://" + url;
+                }
                 page.LoadHtml(new WebClient
                 {
                     Encoding = Encoding.UTF8
@@ -164,7 +164,8 @@ namespace WpfLightNovelClient
             }
             catch (Exception e)
             {
-                txtNotificator.Text = e.Message;
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                    new object[] { e.Message });
             }
             return page.DocumentNode;
         }
@@ -207,7 +208,7 @@ namespace WpfLightNovelClient
                 classTextEntries.Add("collapseomatic_content");
                 classTextEntries.Add("chapters");
                 classTextEntries.Add("page");
-
+                classTextEntries.Add("contents");
                 try
                 {
                     p = root.Descendants()
@@ -217,6 +218,10 @@ namespace WpfLightNovelClient
                         .Where(n => n.Name.Equals("a") &&
                             (n.GetAttributeValue("href", "").ToLower().Contains("-chapter-") || n.InnerText.ToLower().Contains("chapter")))
                         .ToList();
+                    if (p.Count < 2)
+                    {
+                        throw new Exception();
+                    }
                 }
                 catch
                 {
@@ -234,6 +239,10 @@ namespace WpfLightNovelClient
                             .Descendants()
                             .Where(n => n.Name.Equals("a") && !n.InnerHtml.Contains(">") && !n.InnerHtml.Contains("<"))
                             .ToList();
+                        if (p.Count < 2)
+                        {
+                            throw new Exception();
+                        }
                     }
                     catch
                     {
@@ -263,7 +272,10 @@ namespace WpfLightNovelClient
                 //Undefeated God of War
                 if (p.Count < 4)
                 {
-                    p = SearchIndex(root);
+                    var i = SearchIndex(root);
+                    p = (i.Count>p.Count)
+                        ? i 
+                        : p;
                 }
 
                 List<string> urlList = new List<string>();
@@ -523,7 +535,12 @@ namespace WpfLightNovelClient
             //Remove ads on WuxiaWorld
             if (item.ChapterUrl.ToLower().Contains("wuxiaworld"))
             {
-                p.Descendants().Where(n => n.GetAttributeValue("class", "") == "code-block code-block-4 ai-viewport-3").First().RemoveAll();
+                try
+                {
+                    p.Descendants().Where(n => n.GetAttributeValue("class", "") == "code-block code-block-4 ai-viewport-3").First().RemoveAll();
+                }
+                catch   {   }
+               
             }
             //Adds the Html to the list if the content is not empty
             if (p.LastChild != null)
@@ -614,18 +631,26 @@ namespace WpfLightNovelClient
                 {
                     if (chapters.Last().ChapterUrl != next.GetAttributeValue("href", ""))
                     {
-                        chapters.Add(new ChapterDto
+                        ChapterDto c = new ChapterDto();
+                        c.ChapterUrl = next.GetAttributeValue("href", "");
+                        c.ChapterId = chapters.Count+1;
+                        try
                         {
-                            ChapterUrl = next.GetAttributeValue("href", ""),
-                            ChapterId = chapters.Count - 1,
-                            DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")).First().InnerText)
-                        });
+                            c.DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")).FirstOrDefault().InnerText);
+                        }
+                        catch (Exception)
+                        {
+                            if (c.ChapterUrl.ToLower().Contains("wuxiaworld") || c.ChapterUrl.ToLower().Contains("gravitytales") || c.ChapterUrl.ToLower().Contains("translationnations"))
+                                throw new InvalidOperationException();
+                            c.DisplayName = "Chapter " + c.ChapterId;
+                        }
+                        chapters.Add(c);
                         next = nextChapter(root);
                     }
                     else throw new HttpException();
                     root = changeSite(root);
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException e)
                 {
                     stop = true;
                     chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
@@ -718,7 +743,7 @@ namespace WpfLightNovelClient
             listOfBooks.Insert(0,b);
             displayedBookList.Insert(0, b);
             bookList.Items.Refresh();
-            bookList.SelectedItem = bookList.Items.GetItemAt(displayedBookList.Count - 1);
+            bookList.SelectedItem = bookList.Items.GetItemAt(0);
         }
 
         private void getCustomChapterBtn_Click(object sender, RoutedEventArgs e)
