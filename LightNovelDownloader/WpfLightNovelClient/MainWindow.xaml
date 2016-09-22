@@ -22,38 +22,43 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <TextBox Name="searchBox" HorizontalAlignment="Stretch" TextChanged="searchBox_TextChanged" VerticalAlignment="Stretch">
-            <TextBox.Style>
-                <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-                    <Style.Resources>
-                        <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
-                            <VisualBrush.Visual>
-                                <Label Content="Search..." Foreground="LightGray" />
-                            </VisualBrush.Visual>
-                        </VisualBrush>
-                    </Style.Resources>
-                    <Style.Triggers>
-                        <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
-                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
-                        </Trigger>
-                        <Trigger Property="Text" Value="{x:Null}">
-                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter Property="Background" Value="White" />
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>
-        </TextBox>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Name="searchBox" TextChanged="searchBox_TextChanged" VerticalContentAlignment="Center" VerticalAlignment="Stretch">
+                <TextBox.Style>
+                    <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                        <Style.Resources>
+                            <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                <VisualBrush.Visual>
+                                    <Label Content="Search..." Foreground="LightGray" />
+                                </VisualBrush.Visual>
+                            </VisualBrush>
+                        </Style.Resources>
+                        <Style.Triggers>
+                            <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
+                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                            </Trigger>
+                            <Trigger Property="Text" Value="{x:Null}">
+                                <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="Background" Value="White" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+            <Label Content="Download-List" Name="downloadLbl" Visibility="Hidden"></Label>
+            <Button Grid.Column="1" Content="Show Downloads" Name="downloadListBtn" Click="downloadListBtn_Click"></Button>
+        </Grid>
+        
         <ListBox Grid.Row="1" x:Name="bookList" DisplayMemberPath="Name" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="bookList_SelectionChanged"/>
+        <ListView Visibility="Hidden" Grid.Row="1" x:Name="downloadList" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" Background="White">
-            <StatusBarItem>
-                <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
-            </StatusBarItem>
-            <StatusBarItem HorizontalContentAlignment="Stretch">
-                <ProgressBar Style="{StaticResource CommonProgressBar}" x:Name="downloadProgress" Minimum="0" Maximum="100" Visibility="Collapsed"/>
-            </StatusBarItem>
+            <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
         </StatusBar>
         <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="3" VerticalContentAlignment="Center" VerticalAlignment="Stretch">
             <TextBox.Style>
@@ -159,6 +164,5 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-
     </Grid>
 </Window>

@@ -1,0 +1,13 @@
+﻿<UserControl x:Class="WpfLightNovelClient.LabeledProgressBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WpfLightNovelClient"
+             mc:Ignorable="d" 
+             d:DesignHeight="30" HorizontalAlignment="Stretch">
+    <Grid Margin="2 0 2 0" HorizontalAlignment="Stretch">
+        <ProgressBar VerticalAlignment="Center" x:Name="ProgressBar" Style="{StaticResource CommonProgressBar}"/>
+        <Label x:Name="ContentLabel" HorizontalAlignment="Center"/>
+    </Grid>
+</UserControl>

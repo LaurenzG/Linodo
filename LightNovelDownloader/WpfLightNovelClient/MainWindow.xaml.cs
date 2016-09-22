@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -32,6 +33,7 @@ namespace WpfLightNovelClient
         List<BookDto> listOfBooks = new List<BookDto>();
         List<BookDto> displayedBookList = new List<BookDto>();
         List<ChapterDto> currentChapterList = new List<ChapterDto>();
+        ObservableCollection<LabeledProgressBar> downloads = new ObservableCollection<LabeledProgressBar>();
         public MainWindow()
         {
             InitializeComponent();
@@ -40,18 +42,12 @@ namespace WpfLightNovelClient
         {
             chapterList.ItemsSource = currentChapterList;
             bookList.ItemsSource = displayedBookList;
+            downloadList.ItemsSource = downloads;
             asyncLoadBooks();
             EventManager.RegisterClassHandler(typeof(FrameworkElement), FrameworkElement.ToolTipOpeningEvent, new ToolTipEventHandler(ToolTipHandler));
 
         }
-
-        private void ToolTipHandler(object sender, ToolTipEventArgs e)
-        {
-            // To stop the tooltip from appearing, mark the event as handled
-            if(!(bool)Properties.Settings.Default["ShowToolTips"])
-                e.Handled = true;
-        }
-
+        #region Load Books
         private void asyncLoadBooks()
         {
             txtNotificator.Text = "Loading Books";
@@ -65,15 +61,12 @@ namespace WpfLightNovelClient
             bookList.Items.Refresh();
             txtNotificator.Text = "";
         }
-
-        
         private void loadBooks(object sender, DoWorkEventArgs eh)
         {
             var categoryList = new List<BookDto>();
             List<HtmlNode> p = new List<HtmlNode>();
             HtmlNode root;
-
-            #region Fill p
+            
             try
             {
                 var cts = new CancellationTokenSource();
@@ -123,7 +116,6 @@ namespace WpfLightNovelClient
             {
                 MessageBox.Show("GravityTales failed to load!");
             }
-            #endregion
             displayedBookList.Clear();
             listOfBooks.Clear();
             for (int i = 0; i < p.Count(); i++)
@@ -147,50 +139,17 @@ namespace WpfLightNovelClient
                 .Where(n => n.Name.Equals("a") && n.ParentNode.ParentNode.ParentNode.GetAttributeValue("id", "").Equals(id))
                 .ToList();
         }
-        private HtmlNode switchSite(string url)
-        {
-            var page = new HtmlDocument();
-            try
-            {
-                if (!url.Substring(0, 6).Contains("http"))
-                {
-                    url = "http://" + url;
-                }
-                page.LoadHtml(new WebClient
-                {
-                    Encoding = Encoding.UTF8
-                }.DownloadString(url));
-            }
-            catch (Exception e)
-            {
-                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
-                                    new object[] { e.Message });
-                return null;
-            }
-            return page.DocumentNode;
-        }
-
-        private void bookList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            bookList.IsEnabled = false;
-            txtNotificator.Text = "Getting Chapters";
-            BackgroundWorker work = new BackgroundWorker();
-            work.DoWork += loadChapters;
-            work.RunWorkerAsync(bookList.SelectedItem);
-            work.RunWorkerCompleted += Work_RunWorkerSelectedItemComplete;
-        }
-
         private void Work_RunWorkerSelectedItemComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             bookList.IsEnabled = true;
             txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator), new object[] { "" });
         }
+        #endregion
 
+        #region Load Chapter
         private void loadChapters(object sender, DoWorkEventArgs eh)
         {
             var selectedBook = (BookDto)eh.Argument;
-            
-            
             if (selectedBook == null) return;
             BookDto book = new BookDto
             {
@@ -344,17 +303,6 @@ namespace WpfLightNovelClient
             }
             return root;
         }
-
-        private void RefreshList()
-        {
-            chapterList.Items.Refresh();
-        }
-
-        private void UpdateTxtNotificator(string msg)
-        {
-            txtNotificator.Text = msg;
-        }
-
         private List<HtmlNode> SearchIndex(HtmlNode root)
         {
             try
@@ -378,38 +326,9 @@ namespace WpfLightNovelClient
                 return new List<HtmlNode>();
             }
         }
+        #endregion
 
-        private void downloadBtn_Click(object sender, RoutedEventArgs e)
-        {
-            List<ChapterDto> selectedChapters = chapterList.SelectedItems.OfType<ChapterDto>().ToList();
-            BookDto selectedBook = (BookDto)bookList.SelectedItem;
-            
-            if (selectedBook == null) selectedBook = new BookDto { IndexUrl = findBook.Text, Name = "Custom" };
-            if (selectedChapters.Count > 0)
-            {
-                BackgroundWorker worker = new BackgroundWorker();
-                downloadProgress.Value = 0;
-                downloadProgress.Visibility = Visibility.Visible;
-                txtNotificator.Text = "Downloading...";
-                worker.WorkerReportsProgress = true;
-                try
-                {
-                    worker.DoWork += downloadChapter;
-                    worker.ProgressChanged += worker_ProgressChanged;
-                    worker.RunWorkerAsync(new List<object> { selectedChapters, selectedBook });
-                }
-                catch (WebException we)
-                {
-                    txtNotificator.Text = we.Message;
-                }
-            }
-        }
-
-        private void worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            downloadProgress.Value = e.ProgressPercentage;
-        }
-
+        #region Download Chapter
         private void downloadChapter(object sender, DoWorkEventArgs e)
         {
             List<string> content = new List<string>();
@@ -424,12 +343,14 @@ namespace WpfLightNovelClient
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                         new object[] { "The style template was not found!" });
             }
-            
             var arguments = e.Argument as List<object>;
             var chapters = (List<ChapterDto>)arguments[0];
-            var firstChapter = chapters[0];
-            
-            ChapterDto lastChapter = new ChapterDto();
+            double avgTime = 0;
+            Stopwatch watch = Stopwatch.StartNew();
+            BookDto book = (BookDto)arguments[1];
+
+            var barTag = arguments[2];
+
             try
             {
                 int i = 0;
@@ -439,11 +360,12 @@ namespace WpfLightNovelClient
                     s = addSite(item);
                     if (!s.Equals(""))
                     {
-                        lastChapter = item;
                         content.Add(s);
                     }
                     i++;
-                    (sender as BackgroundWorker).ReportProgress(i*100/chapters.Count);
+                    avgTime = (avgTime * (i - 1) + watch.Elapsed.TotalMilliseconds / 1000) / i;
+                    (sender as BackgroundWorker).ReportProgress(i * 100 / chapters.Count, new { RemainingTime = avgTime * (chapters.Count - i), DownloadBar = barTag });
+                    watch.Restart();
                 }
             }
             catch (InvalidCastException)
@@ -451,6 +373,7 @@ namespace WpfLightNovelClient
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                         new object[] { "Some chapters might not be displayed properly" });
             }
+            watch.Stop();
             if (content.Count > 0)
             {
                 //Get the default/saved path for the file to be saved at
@@ -458,16 +381,15 @@ namespace WpfLightNovelClient
                     ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
                     : (string)Properties.Settings.Default["Path"];
 
-                //Get the book, to name the site accordingly
-                BookDto book = (BookDto)arguments[1];
+
                 string ending = ((bool)Properties.Settings.Default["AsEpub"]
                     ? ".epub"
                     : ".html");
 
                 if (chapters.Count > 1)
-                    path = path + "\\" + book.Name + "-Chapters-" + firstChapter.ChapterId + "-" + lastChapter.ChapterId + ending;
+                    path = path + "\\" + book.Name + "-Chapters-" + chapters[0].ChapterId + "-" + chapters.Last().ChapterId + ending;
                 else
-                    path = path + "\\" + book.Name + "-Chapter-" + firstChapter.ChapterId + ending;
+                    path = path + "\\" + book.Name + "-Chapter-" + chapters[0].ChapterId + ending;
 
 
                 if ((bool)Properties.Settings.Default["AsEpub"])
@@ -477,7 +399,7 @@ namespace WpfLightNovelClient
                     epub.Metadata.Title = book.Name;
                     for (int i = 0; i < content.Count; i++)
                     {
-                        epub.AddContent(book.Name + "-" + (firstChapter.ChapterId + i) + ".html", string.Join("", css) + content[i]);
+                        epub.AddContent(book.Name + "-" + (chapters[0].ChapterId + i) + ".html", string.Join("", css) + content[i]);
                     }
                     epub.BuildToFile(path);
                 }
@@ -487,20 +409,29 @@ namespace WpfLightNovelClient
                     System.IO.File.WriteAllLines(path, css);
                 }
 
-                txtNotificator.Dispatcher.Invoke(new UpdateProgressBarCallback(UpdateProgress),
-                        new object[] { path });
-                downloadProgress.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar));
-            } else
+                downloadList.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar), new object[] { barTag, path });
+            }
+            else
             {
                 txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                         new object[] { "Failed to download the chapter!" });
-                downloadProgress.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar));
+                downloadList.Dispatcher.Invoke(new HideProgressBarCallback(HideProgressBar), new object[] { barTag, "" });
             }
         }
 
-        private void HideProgressBar()
+        private void worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            downloadProgress.Visibility = Visibility.Collapsed;
+            string barTag = (string)e.UserState.GetType().GetProperty("DownloadBar").GetValue(e.UserState);
+            foreach (var item in downloads)
+            {
+                if (item.Tag.Equals(barTag))
+                {
+                    item.ContentLabel.Content = e.ProgressPercentage + "% ~"
+                        + string.Format("{0:N1}", (double)e.UserState.GetType().GetProperty("RemainingTime").GetValue(e.UserState))
+                        + "s remaining";
+                    item.ProgressBar.Value = e.ProgressPercentage;
+                }
+            }
         }
 
         private string addSite(ChapterDto item)
@@ -617,21 +548,9 @@ namespace WpfLightNovelClient
             return s;
         }
 
-        private void refreshChapterBtn_Click(object sender, RoutedEventArgs e)
-        {
-            List<ChapterDto> chapters = chapterList.Items.OfType<ChapterDto>().ToList();
-            if (chapters.Count > 0)
-            {
-                txtNotificator.Text = "Searching...";
-                Thread t = new Thread(() => getLatestChapters(chapters));
-                t.Start();
-            }
-        }
-        private delegate void UpdateProgressBarCallback(string path);
-        private delegate void HideProgressBarCallback();
-        private delegate void UpdateTxtNotificatorCallback(string msg);
-        private delegate void RefreshListCallback();
-        private delegate void UpdateItemsCallback(ChapterDto c);
+        #endregion
+
+        #region Get Latest Chapters
         private void getLatestChapters(List<ChapterDto> chapters)
         {
             bool success=false;
@@ -653,16 +572,7 @@ namespace WpfLightNovelClient
                                         new object[] { chapters.Last() });
                     chapters.Remove(chapters.Last());
                 }
-            }
-            //catch (Exception)
-            //{
-            //    if(chapters.ElementAt(chapters.Count-1).DisplayName=="")
-            //        chapters.RemoveAt(chapters.Count - 1);
-            //    chapterList.Dispatcher.Invoke(new UpdateItemsCallback(this.UpdateItems),
-            //    new object[] { chapters });
-            //    return;
-            //}
-            
+            }            
             bool stop = false;
             
             //Continues to read the next chapter links and adds those chapters to the chapter list
@@ -701,7 +611,9 @@ namespace WpfLightNovelClient
                 }
             }
         }
+        #endregion
 
+        #region Change Site
         private HtmlNode changeSite(HtmlNode root)
         {
             var p = nextChapter(root);
@@ -713,32 +625,139 @@ namespace WpfLightNovelClient
                     .Where(n => n.Name == "a" && n.InnerText.ToLower().Contains("next"))
                     .First();
         }
+        private HtmlNode switchSite(string url)
+        {
+            var page = new HtmlDocument();
+            try
+            {
+                if (!url.Substring(0, 6).Contains("http"))
+                {
+                    url = "http://" + url;
+                }
+                page.LoadHtml(new WebClient
+                {
+                    Encoding = Encoding.UTF8
+                }.DownloadString(url));
+            }
+            catch (Exception e)
+            {
+                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
+                                    new object[] { e.Message });
+                return null;
+            }
+            return page.DocumentNode;
+        }
+        #endregion
+
+        #region Callback Methods
         private void UpdateItems(ChapterDto c)
         {
             if (currentChapterList.Contains(c)) currentChapterList.Remove(c);
             else currentChapterList.Add(c);
             chapterList.Items.Refresh();
         }
-        private void UpdateProgress(string path)
+        private void RemoveDownload(LabeledProgressBar lProgress)
         {
-            txtNotificator.Text = "File created successfully,click to open!";
-            txtNotificator.Tag = path;
-            txtNotificator.AddHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));           
-            System.Timers.Timer timer = new System.Timers.Timer(5000) { Enabled = true };
-            timer.Elapsed += (sender, args) =>
-            {
-                txtNotificator.RemoveHandler(MouseDownEvent, new RoutedEventHandler(txtNotificator_MouseDown));
-
-                txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
-                                        new object[] { "" });
-
-                timer.Dispose();
-            };
+            downloads.Remove(lProgress);
+        }
+        private void RefreshList()
+        {
+            chapterList.Items.Refresh();
         }
 
-        private void txtNotificator_MouseDown(object sender, RoutedEventArgs e)
+        private void UpdateTxtNotificator(string msg)
         {
-            System.Diagnostics.Process.Start(txtNotificator.Tag.ToString());
+            txtNotificator.Text = msg;
+        }
+        private void HideProgressBar(string barTag, string path)
+        {
+            foreach (var item in downloads)
+            {
+                if (barTag.Equals(item.Tag))
+                {
+                    if (path == "")
+                    {
+                        downloads.Remove(item);
+                        return;
+                    }
+                    item.ContentLabel.Content = "File created successfully, click to open!";
+                    item.ContentLabel.Tag = path;
+                    item.ContentLabel.AddHandler(MouseDownEvent, new RoutedEventHandler(ContentLabel_MouseDown));
+                    System.Timers.Timer timer = new System.Timers.Timer(5000) { Enabled = true };
+                    timer.Elapsed += (sender, args) =>
+                    {
+                        downloadList.Dispatcher.Invoke(new RemoveDownloadCallback(RemoveDownload), new object[] { item });
+                        timer.Dispose();
+                    };
+                    return;
+                }
+            }
+        }
+        #endregion
+
+        #region Eventhandler
+        private void ContentLabel_MouseDown(object sender, RoutedEventArgs e)
+        {
+            
+            Process.Start((string)sender.GetType().GetProperty("Tag").GetValue(sender));
+        }
+
+        private void refreshChapterBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<ChapterDto> chapters = chapterList.Items.OfType<ChapterDto>().ToList();
+            if (chapters.Count > 0)
+            {
+                txtNotificator.Text = "Searching...";
+                Thread t = new Thread(() => getLatestChapters(chapters));
+                t.Start();
+            }
+        }
+
+        private void bookList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            bookList.IsEnabled = false;
+            txtNotificator.Text = "Getting Chapters";
+            BackgroundWorker work = new BackgroundWorker();
+            work.DoWork += loadChapters;
+            work.RunWorkerAsync(bookList.SelectedItem);
+            work.RunWorkerCompleted += Work_RunWorkerSelectedItemComplete;
+        }
+
+        private void downloadBtn_Click(object sender, RoutedEventArgs e)
+        {
+            List<ChapterDto> selectedChapters = chapterList.SelectedItems.OfType<ChapterDto>().ToList();
+            BookDto selectedBook = (BookDto)bookList.SelectedItem;
+            string dt = selectedBook.Name+DateTime.Now.Millisecond;
+
+            if (selectedBook == null) selectedBook = new BookDto { IndexUrl = findBook.Text, Name = "Custom" };
+            if (selectedChapters.Count > 0)
+            {
+                BackgroundWorker worker = new BackgroundWorker();
+                downloads.Add(new LabeledProgressBar()
+                {
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Tag = dt,
+                    ToolTip = new ToolTip()
+                    {
+                        Content = selectedBook.Name + ", "
+                        + selectedChapters.First().DisplayName + "-" + selectedChapters.Last().DisplayName + " -> Count: " + selectedChapters.Count
+                    }
+                });
+                downloadList.Items.Refresh();
+                if (downloadList.Visibility == Visibility.Hidden) downloadListBtn_Click(new { }, new RoutedEventArgs());
+                worker.WorkerReportsProgress = true;
+                try
+                {
+                    worker.DoWork += downloadChapter;
+                    worker.ProgressChanged += worker_ProgressChanged;
+                    worker.RunWorkerAsync(new List<object> { selectedChapters, selectedBook, dt });
+                }
+                catch (WebException we)
+                {
+                    txtNotificator.Text = we.Message;
+                }
+            }
         }
 
         private void settingsBtn_Click(object sender, RoutedEventArgs e)
@@ -804,5 +823,41 @@ namespace WpfLightNovelClient
             }
             chapterList.Items.Refresh();
         }
+
+        private void downloadListBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (bookList.Visibility == Visibility.Visible)
+            {
+                downloadListBtn.Content = "Show Books";
+                bookList.Visibility = Visibility.Hidden;
+                searchBox.Visibility = Visibility.Hidden;
+                downloadLbl.Visibility = Visibility.Visible;
+                downloadList.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                downloadListBtn.Content = "Show Downloads";
+                bookList.Visibility = Visibility.Visible;
+                searchBox.Visibility = Visibility.Visible;
+                downloadLbl.Visibility = Visibility.Hidden;
+                downloadList.Visibility = Visibility.Hidden;
+            }
+        }
+
+        private void ToolTipHandler(object sender, ToolTipEventArgs e)
+        {
+            // To stop the tooltip from appearing, mark the event as handled
+            if (!(bool)Properties.Settings.Default["ShowToolTips"] && !e.Source.ToString().Contains("LabeledProgressBar"))
+                e.Handled = true;
+        }
+        #endregion
+
+        #region delegates
+        private delegate void HideProgressBarCallback(string barTag, string path);
+        private delegate void UpdateTxtNotificatorCallback(string msg);
+        private delegate void RefreshListCallback();
+        private delegate void UpdateItemsCallback(ChapterDto c);
+        private delegate void RemoveDownloadCallback(LabeledProgressBar lProgress);
+        #endregion
     }
 }

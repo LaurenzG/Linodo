@@ -105,12 +105,19 @@
     <Compile Include="AddChapterDialog.xaml.cs">
       <DependentUpon>AddChapterDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="LabeledProgressBar.xaml.cs">
+      <DependentUpon>LabeledProgressBar.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Settings.xaml.cs">
       <DependentUpon>Settings.xaml</DependentUpon>
     </Compile>
     <Page Include="AddChapterDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LabeledProgressBar.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
