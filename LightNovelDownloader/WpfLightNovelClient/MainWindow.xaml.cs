@@ -588,7 +588,7 @@ namespace WpfLightNovelClient
                         try
                         {
                             c.DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => (n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")) ||
-                                                                                                  n.GetAttributeValue("class","")=="entry-title").FirstOrDefault().InnerText);
+                                                                                                  n.GetAttributeValue("class", "") == "entry-title").FirstOrDefault().InnerText).Trim('\r').Trim('\n').Trim(' ');
                         }
                         catch (Exception)
                         {
