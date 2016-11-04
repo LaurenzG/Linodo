@@ -206,6 +206,7 @@ namespace WpfLightNovelClient
                         {
                             var jsonString = response.Content.ReadAsStringAsync().Result;
                             IEnumerable<ChapterGroup> groups = new JavaScriptSerializer().Deserialize<IEnumerable<ChapterGroup>>(jsonString);
+                            book.IndexUrl = book.IndexUrl.EndsWith("/") ? book.IndexUrl : book.IndexUrl + "/";
                             foreach (var item in groups)
                             {
                                 client = new HttpClient();
@@ -221,9 +222,10 @@ namespace WpfLightNovelClient
                                         .Deserialize<IEnumerable<GravityChapters>>("["+jsonString.Split('[')[1].Split(']')[0]+"]");
                                     foreach (var chap in gravChapters)
                                     {
+                                        
                                         chapters.Add(new ChapterDto
                                         {
-
+                                            
                                             ChapterUrl = book.IndexUrl + chap.Slug,
                                             DisplayName = chap.Name
                                         });
@@ -623,6 +625,7 @@ namespace WpfLightNovelClient
             bool success=false;
             var root = new HtmlDocument().DocumentNode;
             HtmlNode next= new HtmlDocument().DocumentNode;
+            string baseUrl = chapters.Last().ChapterUrl.Replace("http://", "").Split('/')[0];
             //Remove bad links to get to the latest one that is working
             while (!success && chapters.Count>0)
             {
@@ -630,7 +633,7 @@ namespace WpfLightNovelClient
                 {
                     root = switchSite(chapters.Last().ChapterUrl);
                     next = nextChapter(root);
-                    root = changeSite(root);
+                    root = changeSite(root,baseUrl);
                     success = true;
                 }
                 catch (Exception)
@@ -656,7 +659,7 @@ namespace WpfLightNovelClient
                         {
                             if (chapters.Last().ChapterUrl.StartsWith("http://"))
                                 chapters.Last().ChapterUrl = chapters.Last().ChapterUrl.Remove(0, 7);
-                            c.ChapterUrl = chapters.Last().ChapterUrl.Split('/')[0] + c.ChapterUrl;
+                            c.ChapterUrl = baseUrl + c.ChapterUrl;
                         }
                         c.ChapterId = chapters.Count+1;
                         try
@@ -675,7 +678,7 @@ namespace WpfLightNovelClient
                         next = nextChapter(root);
                     }
                     else throw new HttpException();
-                    root = changeSite(root);
+                    root = changeSite(root,baseUrl);
                 }
                 catch (Exception)
                 {
@@ -692,10 +695,11 @@ namespace WpfLightNovelClient
         #endregion
 
         #region Change Site
-        private HtmlNode changeSite(HtmlNode root)
+        private HtmlNode changeSite(HtmlNode root,string baseUrl="")
         {
-            var p = nextChapter(root);
-            return switchSite(p.GetAttributeValue("href", ""));
+            var str = nextChapter(root).GetAttributeValue("href", "");
+            str = str.StartsWith("/") ? baseUrl + str : str;
+            return switchSite(str);
         }
         private HtmlNode nextChapter(HtmlNode root)
         {

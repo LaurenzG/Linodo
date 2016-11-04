@@ -25,7 +25,7 @@ namespace Dto
     public class GravityChapters
     {
         public int ChapterId { get; set; }
-        public int Number { get; set; }
+        public double Number { get; set; }
         public string Name { get; set; }
         public string Slug { get; set; }
     }
