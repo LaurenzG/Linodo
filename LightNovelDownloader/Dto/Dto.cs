@@ -12,6 +12,23 @@ namespace Dto
         public string Name { get; set; }
         public string IndexUrl { get; set; }
     }
+    public class ChapterGroup
+    {
+        public ChapterGroup()
+        {
+
+        }
+        public int ChapterGroupId { get; set; }
+        public string Title { get; set; }
+        public string Order { get; set; }
+    }
+    public class GravityChapters
+    {
+        public int ChapterId { get; set; }
+        public int Number { get; set; }
+        public string Name { get; set; }
+        public string Slug { get; set; }
+    }
     public class ChapterDto
     {
         public int ChapterId { get; set; }

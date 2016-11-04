@@ -9,10 +9,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Script.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -101,21 +104,21 @@ namespace WpfLightNovelClient
                 MessageBox.Show("TranslationNations failed to load!");
             }
 
-            try
-            {
-                root = switchSite("http://gravitytales.com/");
-                p.AddRange(getTranslations(root, "menu-item-11067"));
-                p.AddRange(getTranslations(root, "menu-item-11070"));
-            }
-            catch (WebException e)
-            {
-                MessageBox.Show(e.Message);
-                txtNotificator.Text = e.Message;
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("GravityTales failed to load!");
-            }
+            //try
+            //{
+            //    root = switchSite("http://gravitytales.com/");
+            //    p.AddRange(getTranslations(root, "menu-item-11067"));
+            //    p.AddRange(getTranslations(root, "menu-item-11070"));
+            //}
+            //catch (WebException e)
+            //{
+            //    MessageBox.Show(e.Message);
+            //    txtNotificator.Text = e.Message;
+            //}
+            //catch (Exception)
+            //{
+            //    MessageBox.Show("GravityTales failed to load!");
+            //}
             displayedBookList.Clear();
             listOfBooks.Clear();
             for (int i = 0; i < p.Count(); i++)
@@ -170,6 +173,7 @@ namespace WpfLightNovelClient
                     {
 
                     }
+                
                 //remove sidebars
                 try
                 {
@@ -179,6 +183,64 @@ namespace WpfLightNovelClient
                 }
                 catch { }
                 List<HtmlNode> p = new List<HtmlNode>();
+                if (book.IndexUrl.ToLower().Contains("gravitytales"))
+                {
+                    try
+                    {
+                        string novelId = root.Descendants()
+                               .Where(n => n.GetAttributeValue("id", "") == "contentElement")
+                               .First().GetAttributeValue("ng-init", "").Split(';')[0].Split('=')[1].Trim(' ');
+
+                        #region API
+
+                        HttpClient client = new HttpClient();
+                        client.BaseAddress = new Uri("http://gravitytales.com/Novels/GetChapterGroups/"+novelId);
+
+                        // Add an Accept header for JSON format.
+                        client.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json"));
+
+                        // List data response.
+                        HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var jsonString = response.Content.ReadAsStringAsync().Result;
+                            IEnumerable<ChapterGroup> groups = new JavaScriptSerializer().Deserialize<IEnumerable<ChapterGroup>>(jsonString);
+                            foreach (var item in groups)
+                            {
+                                client = new HttpClient();
+                                client.BaseAddress = new Uri("http://gravitytales.com/Novels/GetNovelChapters/"+ novelId);
+                                client.DefaultRequestHeaders.Accept.Add(
+                                    new MediaTypeWithQualityHeaderValue("application/json"));
+                                response = client.GetAsync("?groupId="+item.ChapterGroupId+"&page=0&count=25").Result;
+                                if (response.IsSuccessStatusCode)
+                                {
+                                    jsonString = response.Content.ReadAsStringAsync().Result;
+                                    
+                                    IEnumerable<GravityChapters> gravChapters = new JavaScriptSerializer()
+                                        .Deserialize<IEnumerable<GravityChapters>>("["+jsonString.Split('[')[1].Split(']')[0]+"]");
+                                    foreach (var chap in gravChapters)
+                                    {
+                                        chapters.Add(new ChapterDto
+                                        {
+
+                                            ChapterUrl = book.IndexUrl + chap.Slug,
+                                            DisplayName = chap.Name
+                                        });
+                                    }
+                                }
+                            }
+                            currentChapterList.Clear();
+                            currentChapterList.AddRange(chapters);
+                            //chapterList.Items.Refresh();
+                            txtNotificator.Dispatcher.Invoke(new RefreshListCallback(RefreshList));
+                        }
+
+                        #endregion
+                    }
+                    catch(Exception e) { }
+
+                }
                 try
                 {
                     p = root.Descendants()
@@ -213,11 +275,16 @@ namespace WpfLightNovelClient
                     }
                     catch
                     {
+
+                        
+
+
                         List<string> classTextEntries = new List<string>();
                         classTextEntries.Add("collapseomatic_content");
                         classTextEntries.Add("chapters");
                         classTextEntries.Add("page");
                         classTextEntries.Add("contents");
+                        classTextEntries.Add("tab-content");
                         bool found = false;
                         foreach (var textEntry in classTextEntries)
                         {
@@ -584,15 +651,21 @@ namespace WpfLightNovelClient
                     {
                         ChapterDto c = new ChapterDto();
                         c.ChapterUrl = next.GetAttributeValue("href", "");
+                        
+                        if (c.ChapterUrl.First().Equals('/'))
+                        {
+                            if (chapters.Last().ChapterUrl.StartsWith("http://"))
+                                chapters.Last().ChapterUrl = chapters.Last().ChapterUrl.Remove(0, 7);
+                            c.ChapterUrl = chapters.Last().ChapterUrl.Split('/')[0] + c.ChapterUrl;
+                        }
                         c.ChapterId = chapters.Count+1;
                         try
                         {
-                            c.DisplayName = HttpUtility.HtmlDecode(root.Descendants().Where(n => (n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")) ||
-                                                                                                  n.GetAttributeValue("class", "") == "entry-title").FirstOrDefault().InnerText).Trim('\r').Trim('\n').Trim(' ');
+                            c.DisplayName = GetDisplayName(root);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
-                            if (c.ChapterUrl.ToLower().Contains("wuxiaworld") || c.ChapterUrl.ToLower().Contains("gravitytales") || c.ChapterUrl.ToLower().Contains("translationnations"))
+                            if (c.ChapterUrl.ToLower().Contains("wuxiaworld") || c.ChapterUrl.ToLower().Contains("translationnations"))
                                 throw new InvalidOperationException();
                             c.DisplayName = "Chapter " + c.ChapterId;
                         }
@@ -610,6 +683,11 @@ namespace WpfLightNovelClient
                     txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator), new object[] { "" });
                 }
             }
+        }
+        private string GetDisplayName(HtmlNode root)
+        {
+            return HttpUtility.HtmlDecode(root.Descendants().Where(n => (n.Name == "h1" && n.InnerText.ToLower().Contains("chapter")) ||
+                                                                                                  n.GetAttributeValue("class", "") == "entry-title").FirstOrDefault().InnerText).Trim('\r').Trim('\n').Trim(' ');
         }
         #endregion
 
@@ -693,6 +771,8 @@ namespace WpfLightNovelClient
                 }
             }
         }
+        
+
         #endregion
 
         #region Eventhandler
@@ -727,7 +807,7 @@ namespace WpfLightNovelClient
         {
             List<ChapterDto> selectedChapters = chapterList.SelectedItems.OfType<ChapterDto>().ToList();
             BookDto selectedBook = (BookDto)bookList.SelectedItem;
-            string dt = selectedBook.Name+DateTime.Now.Millisecond;
+            string dt = selectedBook?.Name+DateTime.Now.Millisecond;
 
             if (selectedBook == null) selectedBook = new BookDto { IndexUrl = findBook.Text, Name = "Custom" };
             if (selectedChapters.Count > 0)
@@ -807,6 +887,14 @@ namespace WpfLightNovelClient
             w.Owner = this;
             w.ShowDialog();
             ChapterDto c = w.Chapter;
+            if (c.DisplayName == "")
+            {
+                try
+                {
+                    c.DisplayName = GetDisplayName(switchSite(c.ChapterUrl));
+                }
+                catch {}
+            }
             if (w.Success)
             {
                 c.ChapterId = currentChapterList.Count;
