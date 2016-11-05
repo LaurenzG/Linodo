@@ -159,7 +159,7 @@ namespace WpfLightNovelClient
                 Name = selectedBook.Name,
                 IndexUrl = selectedBook.IndexUrl
             };
-
+            string baseUrl = book.IndexUrl.Replace("http://", "").Split('/')[0];
             var chapters = new List<ChapterDto>();
             try
             {
@@ -219,7 +219,9 @@ namespace WpfLightNovelClient
                                     jsonString = response.Content.ReadAsStringAsync().Result;
                                     
                                     IEnumerable<GravityChapters> gravChapters = new JavaScriptSerializer()
-                                        .Deserialize<IEnumerable<GravityChapters>>("["+jsonString.Split('[')[1].Split(']')[0]+"]");
+                                        .Deserialize<IEnumerable<GravityChapters>>(jsonString
+                                            .Replace(jsonString.Split('[')[0], "")
+                                            .Replace(jsonString.Split(']').Last(), ""));
                                     foreach (var chap in gravChapters)
                                     {
                                         
@@ -277,10 +279,6 @@ namespace WpfLightNovelClient
                     }
                     catch
                     {
-
-                        
-
-
                         List<string> classTextEntries = new List<string>();
                         classTextEntries.Add("collapseomatic_content");
                         classTextEntries.Add("chapters");
@@ -293,18 +291,19 @@ namespace WpfLightNovelClient
                             try
                             {
                                 p = root.Descendants()
-                                   .Where(n => n.GetAttributeValue("class", "").Contains(textEntry))
+                                   .Where(n => n.GetAttributeValue("class", "").Contains(textEntry)|| n.GetAttributeValue("id", "").Contains(textEntry))
                                    .First()
                                    .Descendants()
                                    .Where(n => n.Name.Equals("a"))
                                    .ToList();
+                                
                                 if (p.Count > 0)
                                 {
                                     found = true;
                                     break;
                                 }
                             }
-                            catch { }
+                            catch(Exception e) {  }
                         }
                         if (!found) txtNotificator.Dispatcher.Invoke(new UpdateTxtNotificatorCallback(UpdateTxtNotificator),
                                     new object[] { "No chapters found" });
@@ -320,17 +319,21 @@ namespace WpfLightNovelClient
                 }
 
                 List<string> urlList = new List<string>();
+                string link = "";
+                
                 for (int i = 0; i < p.Count(); i++)
                 {
-                    if (p.ElementAt(i).GetAttributeValue("href", "") != "" && p.ElementAt(i).InnerText != "" && p.ElementAt(i).InnerText!="Home")
+                    link = p.ElementAt(i).GetAttributeValue("href", "");
+                    link = link.StartsWith("/") ? baseUrl + link : link;
+                    if (link != "" && p.ElementAt(i).InnerText != "" && p.ElementAt(i).InnerText!="Home")
                     {
-                        if (!urlList.Contains(p.ElementAt(i).GetAttributeValue("href", "")))
+                        if (!urlList.Contains(link))
                         {
-                            urlList.Add(p.ElementAt(i).GetAttributeValue("href", ""));
+                            urlList.Add(link);
                             chapters.Add(new ChapterDto
                             {
                                 ChapterId = i + 1,
-                                ChapterUrl = p.ElementAt(i).GetAttributeValue("href", ""),
+                                ChapterUrl = link,
                                 DisplayName = HttpUtility.HtmlDecode(p.ElementAt(i).InnerText).Trim('\n')
                             });
                         }
