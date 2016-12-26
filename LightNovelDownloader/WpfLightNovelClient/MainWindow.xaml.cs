@@ -408,7 +408,8 @@ namespace WpfLightNovelClient
             try
             {
                 //Add the css style-sheet inline
-                css.AddRange(System.IO.File.ReadAllLines(Environment.CurrentDirectory + "\\styles"));
+                css.AddRange(System.IO.File.ReadAllLines(Environment.CurrentDirectory + 
+                    ((bool)Properties.Settings.Default["AsEpub"] ? "\\ePupStyles" : "\\webStyles")));
             }
             catch (System.IO.IOException)
             {
@@ -420,7 +421,13 @@ namespace WpfLightNovelClient
             double avgTime = 0;
             Stopwatch watch = Stopwatch.StartNew();
             BookDto book = (BookDto)arguments[1];
-
+            chapters.ForEach(c=>
+            {
+                if (!c.ChapterUrl.Contains(book.IndexUrl))
+                {
+                    c.ChapterUrl = book.IndexUrl + c.ChapterUrl;
+                }
+            });
             var barTag = arguments[2];
 
             try
@@ -453,15 +460,15 @@ namespace WpfLightNovelClient
                     ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
                     : (string)Properties.Settings.Default["Path"];
 
-
+                book.Name = book.Name.Trim();
                 string ending = ((bool)Properties.Settings.Default["AsEpub"]
                     ? ".epub"
                     : ".html");
-
+                int start = currentChapterList.FindIndex(c => c.DisplayName == chapters[0].DisplayName)+1;
                 if (chapters.Count > 1)
-                    path = path + "\\" + book.Name + "-Chapters-" + chapters[0].ChapterId + "-" + chapters.Last().ChapterId + ending;
+                    path = path + "\\" + book.Name + "-Chapters-" + start + "-" + (int)(currentChapterList.FindIndex(c => c.DisplayName == chapters.Last().DisplayName)+1) + ending;
                 else
-                    path = path + "\\" + book.Name + "-Chapter-" + chapters[0].ChapterId + ending;
+                    path = path + "\\" + book.Name + "-Chapter-" + start + ending;
 
 
                 if ((bool)Properties.Settings.Default["AsEpub"])
@@ -471,7 +478,7 @@ namespace WpfLightNovelClient
                     epub.Metadata.Title = book.Name;
                     for (int i = 0; i < content.Count; i++)
                     {
-                        epub.AddContent(book.Name + "-" + (chapters[0].ChapterId + i) + ".html", string.Join("", css) + content[i]);
+                        epub.AddContent(book.Name + "-" + (start + i) + ".html", string.Join("", css) + content[i]);
                     }
                     epub.BuildToFile(path);
                 }
@@ -715,6 +722,7 @@ namespace WpfLightNovelClient
             var page = new HtmlDocument();
             try
             {
+                
                 if (!url.Substring(0, 6).Contains("http"))
                 {
                     url = "http://" + url;

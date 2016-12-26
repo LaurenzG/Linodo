@@ -16,6 +16,7 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="1"/>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
@@ -52,15 +53,24 @@
                 </TextBox.Style>
             </TextBox>
             <Label Content="Download-List" Name="downloadLbl" Visibility="Hidden"></Label>
-            <Button Grid.Column="1" Content="Show Downloads" Name="downloadListBtn" Click="downloadListBtn_Click"></Button>
+            <Button Grid.Column="2" Content="Show Downloads" Name="downloadListBtn" Click="downloadListBtn_Click"></Button>
         </Grid>
-        
-        <ListBox Grid.Row="1" x:Name="bookList" DisplayMemberPath="Name" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="bookList_SelectionChanged"/>
-        <ListView Visibility="Hidden" Grid.Row="1" x:Name="downloadList" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Grid Grid.Row="1" Grid.ColumnSpan="7">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="1"/>
+                <ColumnDefinition Width="5*" />
+            </Grid.ColumnDefinitions>
+            <ListBox x:Name="bookList" DisplayMemberPath="Name" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SelectionChanged="bookList_SelectionChanged"/>
+            <ListView Visibility="Hidden" x:Name="downloadList" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <ListBox SelectionMode="Extended" x:Name="chapterList" Grid.Column="2" DisplayMemberPath="DisplayName" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <GridSplitter Grid.Column="1" HorizontalContentAlignment="Stretch" HorizontalAlignment="Stretch" />
+        </Grid>
+
         <StatusBar Grid.Row="2" HorizontalAlignment="Stretch" Background="White">
             <TextBlock x:Name="txtNotificator" FontFamily="Segoe UI Light"/>
         </StatusBar>
-        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="1" Grid.ColumnSpan="3" VerticalContentAlignment="Center" VerticalAlignment="Stretch">
+        <TextBox Name="findBook" HorizontalAlignment="Stretch" Grid.Column="2" Grid.ColumnSpan="3" VerticalContentAlignment="Center" VerticalAlignment="Stretch">
             <TextBox.Style>
                 <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
                     <Style.Resources>
@@ -84,7 +94,7 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <Button Name="CustomSiteBtn" Grid.Column="5" Content="Add" Click="CustomSiteBtn_Click">
+        <Button Name="CustomSiteBtn" Grid.Column="6" Content="Add" Click="CustomSiteBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -93,7 +103,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <TextBox Name="CustomBookTxt" Grid.Column="4"  VerticalContentAlignment="Center">
+        <TextBox Name="CustomBookTxt" Grid.Column="5"  VerticalContentAlignment="Center">
             <TextBox.Style>
                 <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
                     <Style.Resources>
@@ -117,8 +127,7 @@
                 </Style>
             </TextBox.Style>
         </TextBox>
-        <ListBox SelectionMode="Extended" Grid.Row="1" x:Name="chapterList" Grid.Column="1" DisplayMemberPath="DisplayName" Grid.ColumnSpan="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        <Button x:Name="downloadBtn" Grid.Column="1" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click">
+        <Button x:Name="downloadBtn" Grid.Column="2" Grid.Row="2" Content="Download" HorizontalAlignment="Stretch" Click="downloadBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -127,7 +136,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="2" Content="Get Latest" Click="refreshChapterBtn_Click">
+        <Button x:Name="refreshChapterBtn" Grid.Row="2" Grid.Column="3" Content="Get Latest" Click="refreshChapterBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -136,7 +145,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="3" Content="Add" Click="getCustomChapterBtn_Click">
+        <Button x:Name="getCustomChapterBtn" Grid.Row="2" Grid.Column="4" Content="Add" Click="getCustomChapterBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -146,7 +155,7 @@
             </Button.ToolTip>
         </Button>
 
-        <Button x:Name="settingsBtn" Grid.Column="5" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click">
+        <Button x:Name="settingsBtn" Grid.Column="6" Grid.Row="2" Content="Settings" HorizontalAlignment="Stretch" Click="settingsBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
@@ -155,7 +164,7 @@
                 </ToolTip>
             </Button.ToolTip>
         </Button>
-        <Button x:Name="deleteBtn" Grid.Column="4" Grid.Row="2" Content="Delete" HorizontalAlignment="Stretch" Click="deleteBtn_Click">
+        <Button x:Name="deleteBtn" Grid.Column="5" Grid.Row="2" Content="Delete" HorizontalAlignment="Stretch" Click="deleteBtn_Click">
             <Button.ToolTip>
                 <ToolTip>
                     <StackPanel>
